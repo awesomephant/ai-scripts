@@ -942,10 +942,16 @@ function main() {
 	// Similar to Node.js path.join()
 	function pathJoin() {
 		var path = "";
-		forEach(arguments, function (arg) {
+		forEach(arguments, function (arg, i) {
 			if (!arg) return;
 			arg = String(arg);
-			arg = arg.replace(/^\/+/, "").replace(/\/+$/, "");
+      // Drop leading slash, except on the first argument
+      // because that's necessary to differentiate
+      // different volumes on Windows
+      if (i > 0){
+        arg.replace(/^\/+/, "")
+      }
+			arg = arg.replace(/\/+$/, "");
 			if (path.length > 0) {
 				path += "/";
 			}
@@ -3932,15 +3938,17 @@ function main() {
 	}
 
 	// Capture and save an image to the filesystem and return html embed code
-	//
+
 	function exportImage(imgName, format, ab, masks, layer, settings) {
 		var imgFile = getImageFileName(imgName, format);
 		var outputPath = pathJoin(getImageFolder(settings), imgFile);
 		var imgId = getImageId(imgName);
-		// imgClass: // remove artboard size (careful not to remove deduplication annotations)
+
+		// remove artboard size (careful not to remove deduplication annotations)
 		var imgClass = imgId.replace(/-[1-9][0-9]+-/, "-");
-		// all images are now absolutely positioned (before, artboard images were
-		// position:static to set the artboard height)
+
+		// all images are now absolutely positioned
+		// (before, artboard images were position:static to set the artboard height)
 		var inlineSvg =
 			isTrue(settings.inline_svg) ||
 			(layer && parseObjectName(layer.name).inline);
@@ -5103,12 +5111,7 @@ function main() {
 		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path");
 		htmlFileDestination =
 			htmlFileDestinationFolder + pageName + settings.html_output_extension;
-
-		// 'index' is assigned upstream now (where applicable)
-		// if (settings.output == 'one-file' && settings.project_type == 'ai2html') {
-		//   htmlFileDestination = htmlFileDestinationFolder + 'index' + settings.html_output_extension;
-		// }
-
+      
 		// write file
 		saveTextFile(htmlFileDestination, textForFile);
 
