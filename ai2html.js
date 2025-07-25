@@ -30,7 +30,7 @@ function main() {
 	var defaultSettings = {
 		namespace: "g-",
 		settings_version: scriptVersion,
-		create_promo_image: false,
+		create_promo_image: true,
 		promo_image_width: 1024,
 		image_format: ["auto"], // Options: auto, png, png24, jpg, svg
 		write_image_files: true,
@@ -100,174 +100,6 @@ function main() {
 		config_file: ["headline", "leadin", "summary", "notes", "sources", "credit"]
 	};
 
-	// These settings override the default settings in NYT preview/birdkit projects
-	var nytOverrideSettings = {
-		image_source_path: "_assets/", // path for <img src="">
-		include_resizer_script: true,
-		include_resizer_css: false,
-		min_width: 280, // added as workaround for a scoop bug affecting ai2html-type graphics
-		accessibility: true,
-		settings_block: [
-			"settings_version",
-			"responsiveness",
-			"include_resizer_css", // adding to text block until we make it the default
-			"image_format",
-			// "write_image_files",
-			// "max_width",
-			"png_transparent",
-			"png_number_of_colors",
-			"jpg_quality",
-			"inline_svg",
-			"output"
-			// "clickable_link"
-			// "use_lazy_loader"
-		],
-
-		config_file: []
-	};
-
-	var nytPreviewSettings = {
-		project_type: "nyt-preview",
-		html_output_path: "../src/",
-		image_output_path: "../public/_assets/"
-	};
-
-	var nytBirdkitSettings = {
-		project_type: "freebird",
-		html_output_path: "../src/lib/graphics/",
-		image_output_path: "../public/_assets/"
-	};
-
-	var nytBirdkitEmbedSettings = {
-		project_type: "ai2html",
-		html_output_path: "../public/",
-		image_output_path: "../public/_assets/",
-		dark_mode_compatible: false,
-		create_json_config_files: true,
-		create_promo_image: false,
-		credit: "By The New York Times",
-		aria_role: "img",
-		alt_text: "",
-		page_template: "vi-article-embed",
-		display_for_promotion_only: false,
-		section: "",
-		size: "full", // changed from "medium" to "full"
-
-		settings_block: [
-			"settings_version",
-			"responsiveness",
-			"alt_text",
-			"max_width",
-			"image_format",
-			"png_number_of_colors",
-			"jpg_quality",
-			"last_updated_text",
-			"section",
-			"headline",
-			"leadin",
-			"summary",
-			"notes",
-			"sources",
-			"credit",
-			"display_for_promotion_only",
-			"dark_mode_compatible",
-			"size"
-		],
-		config_file: [
-			"last_updated_text",
-			"alt_text",
-			"section",
-			"headline",
-			"leadin",
-			"summary",
-			"notes",
-			"sources",
-			"credit",
-			"page_template",
-			"display_for_promotion_only",
-			"size"
-		]
-	};
-
-	// Override settings for simple NYT Preview ai2html embed graphics
-	var nytPreviewEmbedSettings = {
-		project_type: "ai2html",
-		html_output_path: "../public/",
-		image_output_path: "../public/_assets/",
-		dark_mode_compatible: false,
-		create_config_file: true,
-		config_file_path: "../config.yml",
-		create_promo_image: true,
-		credit: "By The New York Times",
-		aria_role: "img",
-		alt_text: "",
-		publish_system: "scoop",
-		page_template: "vi-article-embed",
-		environment: "production",
-		show_in_compatible_apps: true,
-		display_for_promotion_only: false,
-		constrain_width_to_text_column: false,
-		compatibility: "inline",
-		size: "full", // changed from "medium" to "full"
-		scoop_publish_fields: true,
-		scoop_asset_id: "",
-		scoop_username: "",
-		scoop_slug: "",
-		scoop_external_edit_key: "",
-
-		settings_block: [
-			"settings_version",
-			"responsiveness",
-			"alt_text",
-			"max_width",
-			"image_format",
-			// "write_image_files",
-			// "output",
-			"png_number_of_colors",
-			"jpg_quality",
-			// "use_lazy_loader",
-			// "show_completion_dialog_box",
-			"last_updated_text",
-			"headline",
-			"leadin",
-			"summary",
-			"notes",
-			"sources",
-			"credit",
-			"show_in_compatible_apps",
-			"display_for_promotion_only",
-			"constrain_width_to_text_column",
-			"dark_mode_compatible",
-			"size",
-			"scoop_asset_id",
-			"scoop_username",
-			"scoop_slug",
-			"scoop_external_edit_key"
-		],
-		config_file: [
-			"last_updated_text",
-			"headline",
-			"leadin",
-			"summary",
-			"notes",
-			"sources",
-			"credit",
-			"page_template",
-			"publish_system",
-			"environment",
-			"show_in_compatible_apps",
-			"display_for_promotion_only",
-			"constrain_width_to_text_column",
-			"compatibility",
-			"size",
-			"scoop_publish_fields",
-			"scoop_asset_id",
-			"scoop_username",
-			"scoop_slug",
-			"scoop_external_edit_key"
-		]
-	};
-
 	// Rules for converting AI fonts to CSS
 	// vshift shifts text vertically, to compensate for vertical misalignment caused
 	// by a difference between vertical placement in Illustrator (of a system font) and
@@ -329,13 +161,13 @@ function main() {
 	// ================================================
 
 	// html entity substitution
-	var basicCharacterReplacements = [
+	const basicCharacterReplacements = [
 		["\x26", "&amp;"],
 		["\x22", "&quot;"],
 		["\x3C", "&lt;"],
 		["\x3E", "&gt;"]
 	];
-	var extraCharacterReplacements = [
+	const extraCharacterReplacements = [
 		["\xA0", "&nbsp;"],
 		["\xA1", "&iexcl;"],
 		["\xA2", "&cent;"],
@@ -577,13 +409,11 @@ function main() {
 			);
 		}
 		if (!String(app.activeDocument.path)) {
-			error(
-				"You need to save your Illustrator file before running this script"
-			);
+			error("Please save your Illustrator file before running this script");
 		}
 		if (app.activeDocument.documentColorSpace != DocumentColorSpace.RGB) {
 			error(
-				'You should change the document color mode to "RGB" before running ai2html (File>Document Color Mode>RGB Color).'
+				'You should change the document color mode to "RGB" before running ai2html (File > Document Color Mode > RGB Color).'
 			);
 		}
 		if (app.activeDocument.activeLayer.name == "Isolation Mode") {
@@ -617,7 +447,7 @@ function main() {
 		}
 
 		progressBar = new ProgressBar({
-			name: "Ai2html progress",
+			name: "ai2html progress",
 			steps: calcProgressBarSteps()
 		});
 		validateArtboardNames(docSettings); // warn about duplicate artboard names
@@ -635,15 +465,9 @@ function main() {
 	// ==========================================
 
 	if (docIsSaved) {
-		// If document was originally in a saved state, reset the document's
-		// saved flag (the document goes to unsaved state during the script,
-		// because of unlocking / relocking of objects
 		doc.saved = true;
 	} else if (errors.length === 0) {
-		var saveOptions = new IllustratorSaveOptions();
-		saveOptions.pdfCompatible = false;
-		doc.saveAs(new File(docPath + doc.name), saveOptions);
-		// doc.save(); // why not do this? (why set pdfCompatible = false?)
+		doc.save();
 		message("Your Illustrator file was saved.");
 	}
 
@@ -655,7 +479,7 @@ function main() {
 	} else if (isTrue(docSettings.show_completion_dialog_box)) {
 		message(
 			"Script ran in",
-			((+new Date() - startTime) / 1000).toFixed(1),
+			((+new Date() - startTime) / 1000).toFixed(2),
 			"seconds"
 		);
 		var promptForPromo =
@@ -699,7 +523,6 @@ function main() {
 			saveTextFile(jsonPath, jsonStr);
 		} else if (isTrue(settings.create_config_file)) {
 			// Create one top-level config.yml file
-			// (This is being replaced by multiple JSON config files for NYT projects)
 			var yamlPath = docPath + (settings.config_file_path || "config.yml"),
 				yamlStr = generateYamlFileContent(settings);
 			checkForOutputFolder(yamlPath.replace(/[^\/]+$/, ""), "configFileFolder");
@@ -1189,7 +1012,6 @@ function main() {
 	}
 
 	// Very simple Yaml parsing. Does not implement nested properties, arrays and other features
-	// (This is adequate for reading a few top-level properties from NYT's config.yml file)
 	function parseYaml(str) {
 		// TODO: strip comments // var comment = /\s*/
 		var o = {};
@@ -1534,17 +1356,6 @@ function main() {
 		});
 	}
 
-	function detectTimesFonts() {
-		var found = false;
-		try {
-			found = !!(
-				app.textFonts.getByName("NYTFranklin-Medium") &&
-				app.textFonts.getByName("NYTCheltenham-Medium")
-			);
-		} catch (e) {}
-		return found;
-	}
-
 	function getScriptDirectory() {
 		return new File($.fileName).parent;
 	}
@@ -1623,11 +1434,6 @@ function main() {
 	function initDocumentSettings(textBlockSettings) {
 		var settings = extend({}, defaultSettings); // copy default settings
 
-		if (detectTimesEnv(textBlockSettings)) {
-			// NYT settings are only applied in an NYTimes CMS context
-			applyTimesSettings(settings, textBlockSettings);
-		}
-
 		// merge config file settings into @settings
 		// TODO: handle inconsistent settings in text block and local config file
 		// (currently the text block settings override config file settings... but
@@ -1664,147 +1470,12 @@ function main() {
 		}
 	}
 
-	function detectTimesEnv(blockSettings) {
-		var nytFonts = detectTimesFonts();
-		var nytProjectEnv =
-			detectAiFolder() && (detectConfigYml() || detectBirdkitEnv());
-		var nytEnv = nytFonts && nytProjectEnv;
-
-		if (nytFonts && !nytProjectEnv) {
-			if (
-				confirm(
-					"You seem to be running ai2html outside of a NYT graphics project.\nContinue in non-NYT mode?",
-					true
-				)
-			) {
-				nytEnv = false;
-			} else {
-				error(
-					"Make sure your Illustrator file is inside the \u201Cai\u201D folder of a Preview or Birdkit project."
-				);
-			}
-		}
-
-		if (!nytFonts && nytProjectEnv) {
-			if (confirm("Your system is missing the NYT fonts.\nContinue?", true)) {
-				nytEnv = true;
-			} else {
-				error("Install the NYT Fonts and then re-run ai2html.");
-			}
-		}
-
-		// detect incompatibility between text block settings and current context
-		if (nytEnv && blockSettings && detectUnTimesianSettings(blockSettings)) {
-			error(
-				"The settings block is incompatible with NYT Preview. Delete it and re-run ai2html."
-			);
-		}
-
-		return nytEnv;
-	}
-
-	function detectBirdkitEnv() {
-		var configPath = docPath + "../birdkit.config.js";
-		return fileExists(configPath);
-	}
-
-	function applyBirdkitSettings(settings, projectType) {
-		var packagePath = pathJoin(docPath, "..", "package.json");
-		var pkg = fileExists(packagePath) ? readJSONFile(packagePath) : {};
-
-		// Is this a docless birdkit project? (assumes birdkit detected)
-		var isEmbed =
-			projectType == "ai2html" || // manual setting from text block
-			pkg.projectTemplate == "@newsdev/template-ai2html" ||
-			// (deprecated) read from local ai2html-config.json file
-			readConfigFileSettings().project_type == "ai2html" ||
-			// (deprecated) presence of 'config.yml' file indicates an embed
-			detectConfigYml() ||
-			// another test, to work around permissions issue preventing file reading
-			!folderExists(docPath + "../src/");
-
-		if (isEmbed) {
-			extendSettings(settings, nytBirdkitEmbedSettings);
-			// early versions of birdkit still used config.yml for embed settings
-			if (pkg.version && compareVersions(pkg.version, "1.4.0") < 0) {
-				settings.create_json_config_files = false;
-				settings.create_config_file = true;
-				settings.config_file_path = "../config.yml";
-			}
-		} else {
-			extendSettings(settings, nytBirdkitSettings);
-		}
-	}
-
 	// assumes three-part version, e.g. 1.5.0
 	function compareVersions(a, b) {
 		a = map(a.split("."), parseFloat);
 		b = map(b.split("."), parseFloat);
 		var diff = a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || 0;
 		return (diff < 0 && -1) || (diff > 0 && 1) || 0;
-	}
-
-	function detectAiFolder() {
-		return /\/ai\/?$/.test(docPath);
-	}
-
-	function detectConfigYml() {
-		return fileExists(docPath + "../config.yml");
-	}
-
-	function detectUnTimesianSettings(o) {
-		return o.html_output_path == defaultSettings.html_output_path;
-	}
-
-	function applyTimesSettings(settings, blockSettings) {
-		var yamlConfig = readYamlConfigFile(docPath + "../config.yml") || null;
-		// project type can be set manually in the text block settings
-		var projectType = (blockSettings && blockSettings.project_type) || null;
-		extendSettings(settings, nytOverrideSettings);
-
-		if (detectBirdkitEnv()) {
-			applyBirdkitSettings(settings, projectType);
-		} else if (detectConfigYml()) {
-			// assume this is a legacy preview project
-			if (!yamlConfig) {
-				warn("ai2html is unable to read the contents of config.yml");
-			}
-			if (
-				projectType == "ai2html" ||
-				(yamlConfig && yamlConfig.project_type == "ai2html")
-			) {
-				extendSettings(settings, nytPreviewEmbedSettings);
-			} else {
-				extendSettings(settings, nytPreviewSettings);
-			}
-			if (yamlConfig && yamlConfig.scoop_slug) {
-				settings.scoop_slug_from_config_yml = yamlConfig.scoop_slug;
-			}
-			// Read .git/config file to get preview slug
-			var gitConfig = readGitConfigFile(docPath + "../.git/config") || {};
-			if (gitConfig.url) {
-				settings.preview_slug = gitConfig.url
-					.replace(/^[^:]+:/, "")
-					.replace(/\.git$/, "");
-			}
-		}
-
-		if (!folderExists(docPath + "../public/")) {
-			error("Your project seems to be missing a \u201Cpublic\u201D folder.");
-		}
-
-		if (!settings.project_type) {
-			error("ai2html is unable to determine the type of this project.");
-		} else if (
-			settings.project_type != "ai2html" &&
-			!folderExists(docPath + "../src/")
-		) {
-			error(
-				"This seems to be a " +
-					settings.project_type +
-					" type project, but it is missing the expected \u201Csrc\u201D folder."
-			);
-		}
 	}
 
 	function extendSettings(settings, moreSettings) {
@@ -2214,8 +1885,6 @@ function main() {
 
 		if (errors.length > 0) {
 			alertHed = "The Script Was Unable to Finish";
-		} else if (detectTimesFonts()) {
-			alertHed = "Actually, that\u2019s not half bad :)"; // &rsquo;
 		} else {
 			alertHed = "Nice work!";
 		}
@@ -2929,11 +2598,11 @@ function main() {
 	}
 
 	// Convert a TextFrame to an array of data records for each of the paragraphs
-	//   contained in the TextFrame.
+	// contained in the TextFrame.
 	function importTextFrameParagraphs(textFrame) {
 		// The scripting API doesn't give us access to opacity of TextRange objects
-		//   (including individual characters). The best we can do is get the
-		//   computed opacity of the current TextFrame
+		// (including individual characters). The best we can do is get the
+		// computed opacity of the current TextFrame
 		var opacity = getComputedOpacity(textFrame);
 		var blendMode = getBlendMode(textFrame);
 		var charsLeft = textFrame.characters.length;
@@ -3233,7 +2902,7 @@ function main() {
 
 	function getBlendMode(obj) {
 		// Limitation: returns first found blending mode, ignores any others that
-		//   might be applied a parent object
+		// might be applied a parent object
 		while (obj && obj.typename != "Document") {
 			if (obj.blendingMode && obj.blendingMode != BlendModes.NORMAL) {
 				return obj.blendingMode;
@@ -3273,7 +2942,6 @@ function main() {
 		}
 		if (aiStyle.blendMode && (tmp = getBlendModeCss(aiStyle.blendMode))) {
 			cssStyle["mix-blend-mode"] = tmp;
-			// TODO: consider opacity fallback for IE
 		}
 		if (aiStyle.spaceBefore > 0) {
 			cssStyle["padding-top"] = aiStyle.spaceBefore + "px";
@@ -3353,7 +3021,7 @@ function main() {
 	// items: array of PageItems assocated with a clipping path
 	// clipRect: bounding box of clipping path
 	// abRect: bounds of artboard to test
-	//
+
 	function selectMaskedItems(items, clipRect, abRect) {
 		var found = [];
 		var itemRect, itemInArtboard, itemInMask, maskInArtboard;
@@ -3528,7 +3196,7 @@ function main() {
 		// Using AI style of first paragraph in TextFrame to get information about
 		// tracking, justification and top padding
 		// TODO: consider positioning paragraphs separately, to handle pgs with different
-		//   justification in the same text block
+		// justification in the same text block
 		var firstPgStyle = pgData[0].aiStyle;
 		var lastPgStyle = pgData[pgData.length - 1].aiStyle;
 		var isRotated = firstPgStyle.rotated;
@@ -3881,8 +3549,7 @@ function main() {
 			style.stroke = stroke.color;
 			// Chrome doesn't consistently render borders that are less than 1px, which
 			// can cause lines to disappear or flicker as the window is resized.
-			style.strokeWidth =
-				item.strokeWidth < 1 ? 1 : Math.round(item.strokeWidth);
+			style.strokeWidth = Math.max(1, Math.round(item.strokeWidth));
 		}
 		return style;
 	}
@@ -3905,7 +3572,7 @@ function main() {
 	}
 
 	// Return array of line records if path is composed only of vertical and/or
-	//   horizontal line segments, else return null;
+	// horizontal line segments, else return null;
 	function getLineGeometry(points) {
 		var bbox, w, h, p;
 		var lines = [];
@@ -4557,7 +4224,7 @@ function main() {
 	// imgPath: full path of output file
 	// ab: assumed to be active artboard
 	// format: png, png24, jpg
-	//
+
 	function exportRasterImage(imgPath, ab, format, settings) {
 		// This constant is specified in the Illustrator Scripting Reference under ExportOptionsJPEG.
 		var MAX_JPG_SCALE = 776.19;
@@ -5132,12 +4799,12 @@ function main() {
 	function getResizerScript(containerId) {
 		// The resizer function is embedded in the HTML page -- external variables must
 		// be passed in.
-		//
+
 		// TODO: Consider making artboard images position:absolute and setting
 		//   height as a padding % (calculated from the aspect ratio of the graphic).
 		//   This will correctly set the initial height of the graphic before
 		//   an image is loaded.
-		//
+
 		var resizer = function (containerId, opts) {
 			var nameSpace = opts.namespace || "";
 			var containers = findContainers(containerId);
@@ -5151,17 +4818,6 @@ function main() {
 
 				document.addEventListener("DOMContentLoaded", update);
 				window.addEventListener("resize", onResize);
-
-				// NYT Scoop-specific code
-				if (opts.setup) {
-					opts.setup(container).on("cleanup", cleanup);
-				}
-
-				function cleanup() {
-					document.removeEventListener("DOMContentLoaded", update);
-					window.removeEventListener("resize", onResize);
-					if (observer) observer.disconnect();
-				}
 
 				function update() {
 					var artboards = selectChildren(
@@ -5464,5 +5120,6 @@ function main() {
 			outputLocalPreviewPage(textForFile, previewFileDestination, settings);
 		}
 	}
-} // end main() function definition
+}
+
 main();
