@@ -2,7 +2,13 @@
 
 ## ai2html
 
-Forked from everyone's favourite NYT project. The goal is to understand what this does, extract the NYT-specific code, then make improvements.
+Forked from everyone's favourite NYT project.
+
+### Goals
+
+- [ ] Use modern Javascript formatting
+- [ ] Extract NYT-specific code into options (?)
+- [ ] Allow exporting to a different volume than the one Illustrator lives on
 
 ## Prior work
 
