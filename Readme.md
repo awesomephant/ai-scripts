@@ -6,8 +6,9 @@ Forked from everyone's favourite NYT project.
 
 ### Goals
 
-- [ ] Use modern Javascript formatting
+- [x] Use modern Javascript formatting
 - [ ] Extract NYT-specific code into options (?)
+- [ ] Drop legacy options and commented-out code
 - [ ] Allow exporting to a different volume than the one Illustrator lives on
 
 ## Prior work
