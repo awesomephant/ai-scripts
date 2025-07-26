@@ -1,6 +1,13 @@
 export type ImageFormat = "auto" | "png" | "png24" | "jpg" | "svg"
-type TextRenderingMethod = "html" | "image"
 export type ResponsivenessOption = "fixed" | "dynamic"
+type TextRenderingMethod = "html" | "image"
+
+export interface FontRule {
+	aifont: string
+	family: string
+	weight: string
+	style: string
+}
 
 export interface ai2HTMLSettings {
 	namespace: string
@@ -40,6 +47,7 @@ export interface ai2HTMLSettings {
 	use_2x_images_if_possible: boolean
 	use_lazy_loader: boolean
 	include_resizer_widths: boolean
+	fonts?: fontRule[]
 	/**
 	 * container-query resizing
 	 */

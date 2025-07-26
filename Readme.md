@@ -1,5 +1,10 @@
 # Adobe Illustrator Scripts
 
+## Contributing
+
+- `yarn`, `yarn run dev` to start the rollup in watch mode
+- `yarn run tests` to run tests
+
 ## ai2html
 
 Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html).
@@ -10,6 +15,8 @@ Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html)
 - [x] Extract NYT-specific code into options (?)
 - [ ] Use hashmaps instead of arrays for typeface etc. lookup tables
 - [ ] Drop legacy options and commented-out code
+- [ ] Import all existing tests and make sure they keep passing
+- [ ] Allow multiple exports from the same file, maybe with prefixed artboard names?
 - [x] Allow exporting to a different volume than the one Illustrator lives on
 
 ### Notes

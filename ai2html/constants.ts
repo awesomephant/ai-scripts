@@ -1,13 +1,6 @@
-import { ai2HTMLSettings } from "./types";
+import { ai2HTMLSettings, FontRule } from "./types"
 
-interface fontRule {
-	aifont: string;
-	family: string;
-	weight: string;
-	style: string;
-}
-
-const defaultFonts: fontRule[] = [
+const defaultFonts: FontRule[] = [
 	{
 		aifont: "ArialMT",
 		family: "arial,helvetica,sans-serif",
@@ -56,7 +49,7 @@ const defaultFonts: fontRule[] = [
 		weight: "bold",
 		style: "italic"
 	}
-];
+]
 
 // html entity substitution
 // TODO: make this a hash map
@@ -65,7 +58,7 @@ const basicCharacterReplacements = [
 	["\x22", "&quot;"],
 	["\x3C", "&lt;"],
 	["\x3E", "&gt;"]
-];
+]
 
 const extraCharacterReplacements = [
 	["\xA0", "&nbsp;"],
@@ -199,14 +192,14 @@ const extraCharacterReplacements = [
 	["\u2663", "&clubs;"],
 	["\u2665", "&hearts;"],
 	["\u2666", "&diams;"]
-];
+]
 
 // CSS text-transform equivalents
 const caps = [
 	{ ai: "FontCapsOption.NORMALCAPS", html: "none" },
 	{ ai: "FontCapsOption.ALLCAPS", html: "uppercase" },
 	{ ai: "FontCapsOption.SMALLCAPS", html: "uppercase" }
-];
+]
 
 // CSS text-align equivalents
 const align = [
@@ -217,9 +210,9 @@ const align = [
 	{ ai: "Justification.FULLJUSTIFYLASTLINELEFT", html: "justify" },
 	{ ai: "Justification.FULLJUSTIFYLASTLINECENTER", html: "justify" },
 	{ ai: "Justification.FULLJUSTIFYLASTLINERIGHT", html: "justify" }
-];
+]
 
-const blendModes = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }];
+const blendModes = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }]
 
 // list of CSS properties used for translating AI text styles
 // (used for creating a unique identifier for each style)
@@ -242,7 +235,7 @@ const cssTextStyleProperties = [
 	"text-transform",
 	"mix-blend-mode",
 	"vertical-align" // for superscript
-];
+]
 
 // These are base settings that are overridden by text block settings in
 // the .ai document and settings contained in ai2html-config.json files
@@ -314,7 +307,7 @@ const defaultSettings: ai2HTMLSettings = {
 
 	// list of settings to include in the config.yml file
 	config_file: ["headline", "leadin", "summary", "notes", "sources", "credit"]
-};
+}
 export {
 	defaultFonts,
 	basicCharacterReplacements,
@@ -324,4 +317,4 @@ export {
 	blendModes,
 	defaultSettings,
 	cssTextStyleProperties
-};
+}

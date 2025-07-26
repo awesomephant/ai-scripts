@@ -3,7 +3,9 @@
 		"module": "esnext",
 		"removeComments": true,
 		"strict": true,
+		// We set this to avoid naming conflicts with the Adobe types
 		"noLib": true,
+		// Typescript complains about this but Illustrator only supports ES3, so we don't have a choice
 		"target": "es3",
 		"esModuleInterop": true
 	}

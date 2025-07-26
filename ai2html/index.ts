@@ -32,7 +32,7 @@ import T from "../common/timer"
 import ProgressBar from "../common/ProgressBar"
 import formatCSSColor from "../common/formatCSSColor"
 
-import type { ai2HTMLSettings, ImageFormat } from "./types"
+import type { ai2HTMLSettings, ImageFormat, FontRule } from "./types"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -46,7 +46,7 @@ function main() {
 	// by a difference between vertical placement in Illustrator (of a system font) and
 	// browsers (of the web font equivalent). vshift values are percentage of font size. Positive
 	// values correspond to a downward shift.
-	const fonts = [...defaultFonts]
+	const fonts: FontRule[] = [...defaultFonts]
 
 	const cssPrecision = 4
 
@@ -74,6 +74,7 @@ function main() {
 	let docIsSaved: boolean
 	var progressBar: Progressbar
 
+	// TODO We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
 
 	try {
@@ -86,7 +87,7 @@ function main() {
 
 		if (!String(app.activeDocument.fullName)) {
 			error(
-				"Ai2html is unable to run because Illustrator is confused by this document's file path. Does the path contain any forward slashes or other unusual characters?"
+				"ai2html is unable to run because Illustrator is confused by this document's file path. Does the path contain any forward slashes or other unusual characters?"
 			)
 		}
 		if (!String(app.activeDocument.path)) {
@@ -99,7 +100,7 @@ function main() {
 		}
 		if (app.activeDocument.activeLayer.name == "Isolation Mode") {
 			error(
-				"Ai2html is unable to run because the document is in Isolation Mode."
+				"ai2html is unable to run because the document is in Isolation Mode."
 			)
 		}
 		if (
@@ -107,7 +108,7 @@ function main() {
 			app.activeDocument.layers.length == 1
 		) {
 			// TODO: find a better way to detect this condition (mask can be renamed)
-			error("Ai2html is unable to run because you are editing an Opacity Mask.")
+			error("ai2html is unable to run because you are editing an Opacity Mask.")
 		}
 
 		// initialize script settings
@@ -774,7 +775,7 @@ function main() {
 	// ai2html specific utility functions
 	// =====================================
 
-	function calcProgressBarSteps() {
+	function calcProgressBarSteps(): number {
 		var n = 0
 		forEachUsableArtboard(function () {
 			n += 2
@@ -1037,7 +1038,7 @@ function main() {
 	}
 
 	// Derive ai2html program settings by merging default settings and overrides.
-	function initDocumentSettings(textBlockSettings: ai2HTMLSettings) {
+	function initDocumentSettings(textBlockSettings: ai2HTMLSettings | null) {
 		var settings = { ...defaultSettings, scriptVersion } // copy default settings
 
 		// merge config file settings into @settings
@@ -1050,7 +1051,7 @@ function main() {
 		// TODO: consider parsing strings to booleans when relevant, (e.g. "false" -> false)
 		if (textBlockSettings) {
 			for (var key in textBlockSettings) {
-				if (key in settings === false) {
+				if (!(key in settings)) {
 					warn("Settings block contains an unused parameter: " + key)
 				}
 				settings[key] = textBlockSettings[key]
@@ -1157,14 +1158,14 @@ function main() {
 	}
 
 	function createSettingsBlock(settings) {
-		var bounds = getAllArtboardBounds()
-		var fontSize = 15
-		var leading = 19
-		var extraLines = 6
-		var width = 400
-		var left = bounds[0] - width - 50
-		var top = bounds[1]
-		var settingsLines: string[] = ["ai2html-settings"]
+		const bounds = getAllArtboardBounds()
+		const fontSize = 15
+		const leading = 19
+		const extraLines = 6
+		const width = 400
+		const left = bounds[0] - width - 50
+		const top = bounds[1]
+		const settingsLines: string[] = ["ai2html-settings"]
 		var layer, rect, textArea, height
 
 		forEach(settings.settings_block, function (key) {

@@ -1,4 +1,4 @@
-import typescript from "@rollup/plugin-typescript";
+import typescript from "@rollup/plugin-typescript"
 
 export default {
 	input: {
@@ -9,4 +9,4 @@ export default {
 		entryFileNames: "[name].js"
 	},
 	plugins: [typescript()]
-};
+}
