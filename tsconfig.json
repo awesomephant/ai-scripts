@@ -2,6 +2,9 @@
 	"compilerOptions": {
 		"module": "esnext",
 		"removeComments": true,
-		"strict": true
+		"strict": true,
+		"noLib": true,
+		"target": "es3",
+		"esModuleInterop": true
 	}
 }

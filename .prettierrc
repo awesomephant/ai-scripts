@@ -1,5 +1,6 @@
 {
 	"useTabs": true,
 	"trailingComma": "none",
-	"endOfLine": "crlf"
+	"endOfLine": "crlf",
+	"semi": false
 }

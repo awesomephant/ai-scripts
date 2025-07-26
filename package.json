@@ -1,14 +1,17 @@
 {
 	"name": "ai-scripts",
-	"workspaces": [
-		"ai2html"
-	],
 	"devDependencies": {
+		"@jest/globals": "^30.0.5",
 		"@rollup/plugin-typescript": "^12.1.4",
+		"@types/jest": "^30.0.0",
+		"jest": "^30.0.5",
+		"ts-jest": "^29.4.0",
 		"tslib": "^2.8.1",
-		"types-for-adobe": "^7.2.5"
+		"types-for-adobe": "^7.2.5",
+		"typescript": "^5.8.3"
 	},
 	"scripts": {
-		"dev": "rollup -w -c"
+		"dev": "rollup -w -c",
+		"test": "jest"
 	}
 }

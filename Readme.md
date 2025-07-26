@@ -16,6 +16,7 @@ Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html)
 
 - `create_promo_image` shows a prompt to create a PNG version of the file, seems to be an NYT deal
 - Symlink ./dist to the scripts folder `mklink /j [...]/Scripts/max [...]/dist `
+- You can add a shortcut to a script via Window -> Actions -> Add Action, then `Insert Menu Item` from the actions hamburger menu
 
 ## Prior work
 
