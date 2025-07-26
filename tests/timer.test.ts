@@ -1,4 +1,4 @@
-import T from "./timer"
+import T from "../common/timer"
 
 const mockOnstop = jest.fn((key, t) => {})
 
