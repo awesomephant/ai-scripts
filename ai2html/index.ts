@@ -1,16 +1,27 @@
-// ai2html is a script for Adobe Illustrator that converts your Illustrator document into html and css.
-// Copyright (c) 2011-2018 The New York Times Company
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this library except in compliance with the License.
-// You may obtain a copy of the License at
+/*! ai2html is a script for Adobe Illustrator that converts your Illustrator document into HTML and CSS.
+Copyright (c) 2011-2018 The New York Times Company
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this library except in compliance with the License.
+You may obtain a copy of the License at
 
-// http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.*/
+
+/// <reference types="types-for-adobe/Illustrator/2022"/>
+
+import {
+	defaultFonts,
+	basicCharacterReplacements,
+	extraCharacterReplacements,
+	blendModes,
+	align,
+	caps
+} from "./constants";
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -80,10 +91,8 @@ function main() {
 			"image_format",
 			"responsiveness",
 			"include_resizer_css",
-			// "use_lazy_loader",
 			"output",
 			"html_output_path",
-			// "html_output_extension", // removed from settings block in v0.115.6
 			"image_output_path",
 			"image_source_path",
 			"local_preview_template",
@@ -105,221 +114,7 @@ function main() {
 	// by a difference between vertical placement in Illustrator (of a system font) and
 	// browsers (of the web font equivalent). vshift values are percentage of font size. Positive
 	// values correspond to a downward shift.
-	var fonts = [
-		{
-			aifont: "ArialMT",
-			family: "arial,helvetica,sans-serif",
-			weight: "",
-			style: ""
-		},
-		{
-			aifont: "Arial-BoldMT",
-			family: "arial,helvetica,sans-serif",
-			weight: "bold",
-			style: ""
-		},
-		{
-			aifont: "Arial-ItalicMT",
-			family: "arial,helvetica,sans-serif",
-			weight: "",
-			style: "italic"
-		},
-		{
-			aifont: "Arial-BoldItalicMT",
-			family: "arial,helvetica,sans-serif",
-			weight: "bold",
-			style: "italic"
-		},
-		{
-			aifont: "Georgia",
-			family: "georgia,'times new roman',times,serif",
-			weight: "",
-			style: ""
-		},
-		{
-			aifont: "Georgia-Bold",
-			family: "georgia,'times new roman',times,serif",
-			weight: "bold",
-			style: ""
-		},
-		{
-			aifont: "Georgia-Italic",
-			family: "georgia,'times new roman',times,serif",
-			weight: "",
-			style: "italic"
-		},
-		{
-			aifont: "Georgia-BoldItalic",
-			family: "georgia,'times new roman',times,serif",
-			weight: "bold",
-			style: "italic"
-		}
-	];
-
-	// ================================================
-	// Constant data
-	// ================================================
-
-	// html entity substitution
-	const basicCharacterReplacements = [
-		["\x26", "&amp;"],
-		["\x22", "&quot;"],
-		["\x3C", "&lt;"],
-		["\x3E", "&gt;"]
-	];
-	const extraCharacterReplacements = [
-		["\xA0", "&nbsp;"],
-		["\xA1", "&iexcl;"],
-		["\xA2", "&cent;"],
-		["\xA3", "&pound;"],
-		["\xA4", "&curren;"],
-		["\xA5", "&yen;"],
-		["\xA6", "&brvbar;"],
-		["\xA7", "&sect;"],
-		["\xA8", "&uml;"],
-		["\xA9", "&copy;"],
-		["\xAA", "&ordf;"],
-		["\xAB", "&laquo;"],
-		["\xAC", "&not;"],
-		["\xAD", "&shy;"],
-		["\xAE", "&reg;"],
-		["\xAF", "&macr;"],
-		["\xB0", "&deg;"],
-		["\xB1", "&plusmn;"],
-		["\xB2", "&sup2;"],
-		["\xB3", "&sup3;"],
-		["\xB4", "&acute;"],
-		["\xB5", "&micro;"],
-		["\xB6", "&para;"],
-		["\xB7", "&middot;"],
-		["\xB8", "&cedil;"],
-		["\xB9", "&sup1;"],
-		["\xBA", "&ordm;"],
-		["\xBB", "&raquo;"],
-		["\xBC", "&frac14;"],
-		["\xBD", "&frac12;"],
-		["\xBE", "&frac34;"],
-		["\xBF", "&iquest;"],
-		["\xD7", "&times;"],
-		["\xF7", "&divide;"],
-		["\u0192", "&fnof;"],
-		["\u02C6", "&circ;"],
-		["\u02DC", "&tilde;"],
-		["\u2002", "&ensp;"],
-		["\u2003", "&emsp;"],
-		["\u2009", "&thinsp;"],
-		["\u200C", "&zwnj;"],
-		["\u200D", "&zwj;"],
-		["\u200E", "&lrm;"],
-		["\u200F", "&rlm;"],
-		["\u2013", "&ndash;"],
-		["\u2014", "&mdash;"],
-		["\u2018", "&lsquo;"],
-		["\u2019", "&rsquo;"],
-		["\u201A", "&sbquo;"],
-		["\u201C", "&ldquo;"],
-		["\u201D", "&rdquo;"],
-		["\u201E", "&bdquo;"],
-		["\u2020", "&dagger;"],
-		["\u2021", "&Dagger;"],
-		["\u2022", "&bull;"],
-		["\u2026", "&hellip;"],
-		["\u2030", "&permil;"],
-		["\u2032", "&prime;"],
-		["\u2033", "&Prime;"],
-		["\u2039", "&lsaquo;"],
-		["\u203A", "&rsaquo;"],
-		["\u203E", "&oline;"],
-		["\u2044", "&frasl;"],
-		["\u20AC", "&euro;"],
-		["\u2111", "&image;"],
-		["\u2113", ""],
-		["\u2116", ""],
-		["\u2118", "&weierp;"],
-		["\u211C", "&real;"],
-		["\u2122", "&trade;"],
-		["\u2135", "&alefsym;"],
-		["\u2190", "&larr;"],
-		["\u2191", "&uarr;"],
-		["\u2192", "&rarr;"],
-		["\u2193", "&darr;"],
-		["\u2194", "&harr;"],
-		["\u21B5", "&crarr;"],
-		["\u21D0", "&lArr;"],
-		["\u21D1", "&uArr;"],
-		["\u21D2", "&rArr;"],
-		["\u21D3", "&dArr;"],
-		["\u21D4", "&hArr;"],
-		["\u2200", "&forall;"],
-		["\u2202", "&part;"],
-		["\u2203", "&exist;"],
-		["\u2205", "&empty;"],
-		["\u2207", "&nabla;"],
-		["\u2208", "&isin;"],
-		["\u2209", "&notin;"],
-		["\u220B", "&ni;"],
-		["\u220F", "&prod;"],
-		["\u2211", "&sum;"],
-		["\u2212", "&minus;"],
-		["\u2217", "&lowast;"],
-		["\u221A", "&radic;"],
-		["\u221D", "&prop;"],
-		["\u221E", "&infin;"],
-		["\u2220", "&ang;"],
-		["\u2227", "&and;"],
-		["\u2228", "&or;"],
-		["\u2229", "&cap;"],
-		["\u222A", "&cup;"],
-		["\u222B", "&int;"],
-		["\u2234", "&there4;"],
-		["\u223C", "&sim;"],
-		["\u2245", "&cong;"],
-		["\u2248", "&asymp;"],
-		["\u2260", "&ne;"],
-		["\u2261", "&equiv;"],
-		["\u2264", "&le;"],
-		["\u2265", "&ge;"],
-		["\u2282", "&sub;"],
-		["\u2283", "&sup;"],
-		["\u2284", "&nsub;"],
-		["\u2286", "&sube;"],
-		["\u2287", "&supe;"],
-		["\u2295", "&oplus;"],
-		["\u2297", "&otimes;"],
-		["\u22A5", "&perp;"],
-		["\u22C5", "&sdot;"],
-		["\u2308", "&lceil;"],
-		["\u2309", "&rceil;"],
-		["\u230A", "&lfloor;"],
-		["\u230B", "&rfloor;"],
-		["\u2329", "&lang;"],
-		["\u232A", "&rang;"],
-		["\u25CA", "&loz;"],
-		["\u2660", "&spades;"],
-		["\u2663", "&clubs;"],
-		["\u2665", "&hearts;"],
-		["\u2666", "&diams;"]
-	];
-
-	// CSS text-transform equivalents
-	var caps = [
-		{ ai: "FontCapsOption.NORMALCAPS", html: "none" },
-		{ ai: "FontCapsOption.ALLCAPS", html: "uppercase" },
-		{ ai: "FontCapsOption.SMALLCAPS", html: "uppercase" }
-	];
-
-	// CSS text-align equivalents
-	var align = [
-		{ ai: "Justification.LEFT", html: "left" },
-		{ ai: "Justification.RIGHT", html: "right" },
-		{ ai: "Justification.CENTER", html: "center" },
-		{ ai: "Justification.FULLJUSTIFY", html: "justify" },
-		{ ai: "Justification.FULLJUSTIFYLASTLINELEFT", html: "justify" },
-		{ ai: "Justification.FULLJUSTIFYLASTLINECENTER", html: "justify" },
-		{ ai: "Justification.FULLJUSTIFYLASTLINERIGHT", html: "justify" }
-	];
-
-	var blendModes = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }];
+	var fonts = [...defaultFonts];
 
 	// list of CSS properties used for translating AI text styles
 	// (used for creating a unique identifier for each style)
@@ -376,11 +171,11 @@ function main() {
 	//
 	var T = {
 		times: {},
-		start: function (key) {
+		start: function (key: string) {
 			if (key in T.times) return;
 			T.times[key] = +new Date();
 		},
-		stop: function (key) {
+		stop: function (key: string) {
 			var startTime = T.times[key];
 			var elapsed = roundTo((+new Date() - startTime) / 1000, 1);
 			delete T.times[key];
@@ -945,12 +740,12 @@ function main() {
 		forEach(arguments, function (arg, i) {
 			if (!arg) return;
 			arg = String(arg);
-      // Drop leading slash, except on the first argument
-      // because that's necessary to differentiate
-      // different volumes on Windows
-      if (i > 0){
-        arg.replace(/^\/+/, "")
-      }
+			// Drop leading slash, except on the first argument
+			// because that's necessary to differentiate
+			// different volumes on Windows
+			if (i > 0) {
+				arg.replace(/^\/+/, "");
+			}
 			arg = arg.replace(/\/+$/, "");
 			if (path.length > 0) {
 				path += "/";
@@ -1151,8 +946,8 @@ function main() {
 
 	// display debugging message in completion alert box
 	// (in debug mode)
-	function message() {
-		feedback.push(concatMessages(arguments));
+	function message(...args: string[]) {
+		feedback.push(concatMessages(args));
 	}
 
 	function concatMessages(args) {
@@ -1755,7 +1550,7 @@ function main() {
 					throw new SyntaxError("JSON.parse");
 				};
 			}
-		})(); // jshint ignore:line
+		})();
 	}
 
 	// Clean the contents of custom JS, CSS and HTML blocks
@@ -5111,7 +4906,7 @@ function main() {
 		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path");
 		htmlFileDestination =
 			htmlFileDestinationFolder + pageName + settings.html_output_extension;
-      
+
 		// write file
 		saveTextFile(htmlFileDestination, textForFile);
 
