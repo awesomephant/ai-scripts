@@ -15,6 +15,7 @@ Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html)
 ### Notes
 
 - `create_promo_image` shows a prompt to create a PNG version of the file, seems to be an NYT deal
+- Symlink ./dist to the scripts folder `mklink /j [...]/Scripts/max [...]/dist `
 
 ## Prior work
 

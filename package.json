@@ -1,0 +1,11 @@
+{
+    "name": "ai-scripts",
+    "description": "",
+    "authors": "Max Kohler <hello@maxkohler.com>",
+    "version": "1.0.0",
+    "main": "",
+    "dependencies": {},
+    "scripts": {
+        "dev": "tsc -w"
+    }
+}
