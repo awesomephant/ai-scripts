@@ -14,25 +14,28 @@ limitations under the License.*/
 
 /// <reference types="types-for-adobe/Illustrator/2022"/>
 
+declare var app: Application;
+
 import {
 	defaultFonts,
 	basicCharacterReplacements,
 	extraCharacterReplacements,
 	blendModes,
 	align,
-	caps
+	caps,
+	cssTextStyleProperties
 } from "./constants";
 import initJSON from "./json2";
 import T from "./timer";
+import ProgressBar from "./ProgressBar";
+
 import type { ai2HTMLSettings } from "./types";
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
 	// function) has been recommended as a way to minimise intermittent "MRAP" errors.
 	// This advice may be superstitious, need more evidence to decide.
-	// See (for example) https://forums.adobe.com/thread/1810764 and
-	// http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/pdf/illustrator/scripting/Readme.txt
-
+	// See: https://web.archive.org/web/20181116063129/https://forums.adobe.com/thread/1810764
 	var scriptVersion = "0.123.1";
 
 	// These are base settings that are overridden by text block settings in
@@ -114,28 +117,6 @@ function main() {
 	// values correspond to a downward shift.
 	var fonts = [...defaultFonts];
 
-	// list of CSS properties used for translating AI text styles
-	// (used for creating a unique identifier for each style)
-	var cssTextStyleProperties = [
-		//'top' // used with vshift; not independent of other properties
-		"position",
-		"font-family",
-		"font-size",
-		"font-weight",
-		"font-style",
-		"color",
-		"line-height",
-		"height", // used for point-type paragraph styles
-		"letter-spacing",
-		"opacity",
-		"padding-top",
-		"padding-bottom",
-		"text-align",
-		"text-transform",
-		"mix-blend-mode",
-		"vertical-align" // for superscript
-	];
-
 	var cssPrecision = 4;
 
 	// ================================
@@ -156,8 +137,8 @@ function main() {
 
 	var docSettings;
 	var textBlockData;
-	var doc, docPath, docSlug, docIsSaved;
-	var progressBar;
+	var doc: Document, docPath: string, docSlug, docIsSaved;
+	var progressBar: Progressbar;
 
 	const JSON = initJSON();
 
@@ -1073,7 +1054,7 @@ function main() {
 		});
 	}
 
-	function isTestedIllustratorVersion(version) {
+	function isTestedIllustratorVersion(version: string) {
 		var majorNum = parseInt(version);
 		return majorNum >= 18 && majorNum <= 29; // Illustrator CC 2014 through 2025
 	}
@@ -1485,52 +1466,6 @@ function main() {
 		for (i = objectsToRelock.length - 1; i >= 0; i--) {
 			objectsToRelock[i].locked = true;
 		}
-	}
-
-	function ProgressBar(opts) {
-		opts = opts || {};
-		var steps = opts.steps || 0;
-		var step = 0;
-		var win = new Window(
-			"palette",
-			opts.name || "Progress",
-			[150, 150, 600, 260]
-		);
-		win.pnl = win.add("panel", [10, 10, 440, 100], "Progress");
-		win.pnl.progBar = win.pnl.add("progressbar", [20, 35, 410, 60], 0, 100);
-		win.pnl.progBarLabel = win.pnl.add("statictext", [20, 20, 320, 35], "0%");
-		win.show();
-
-		// function getProgress() {
-		//   return win.pnl.progBar.value/win.pnl.progBar.maxvalue;
-		// }
-
-		function update() {
-			win.update();
-		}
-
-		this.step = function () {
-			step = Math.min(step + 1, steps);
-			this.setProgress(step / steps);
-		};
-
-		this.setProgress = function (progress) {
-			var max = win.pnl.progBar.maxvalue;
-			// progress is always 0.0 to 1.0
-			var pct = progress * max;
-			win.pnl.progBar.value = pct;
-			win.pnl.progBarLabel.text = Math.round(pct) + "%";
-			update();
-		};
-
-		this.setTitle = function (title) {
-			win.pnl.text = title;
-			update();
-		};
-
-		this.close = function () {
-			win.close();
-		};
 	}
 
 	// ======================================
@@ -2109,7 +2044,7 @@ function main() {
 	// s: object containing CSS text properties
 	function getStyleKey(s) {
 		var key = "";
-		for (var i = 0, n = cssTextStyleProperties.length; i < n; i++) {
+		for (var i = 0; i < cssTextStyleProperties.length; i++) {
 			key += "~" + (s[cssTextStyleProperties[i]] || "");
 		}
 		return key;
@@ -2161,7 +2096,7 @@ function main() {
 
 	// Convert a TextFrame to an array of data records for each of the paragraphs
 	// contained in the TextFrame.
-	function importTextFrameParagraphs(textFrame) {
+	function importTextFrameParagraphs(textFrame: TextFrame) {
 		// The scripting API doesn't give us access to opacity of TextRange objects
 		// (including individual characters). The best we can do is get the
 		// computed opacity of the current TextFrame
@@ -2204,7 +2139,7 @@ function main() {
 		return data;
 	}
 
-	function cleanHtmlTags(str) {
+	function cleanHtmlTags(str: string) {
 		var tagName = findHtmlTag(str);
 		// only warn for certain tags
 		if (

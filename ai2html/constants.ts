@@ -219,11 +219,34 @@ const align = [
 
 const blendModes = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }];
 
+// list of CSS properties used for translating AI text styles
+// (used for creating a unique identifier for each style)
+
+const cssTextStyleProperties = [
+	//'top' // used with vshift; not independent of other properties
+	"position",
+	"font-family",
+	"font-size",
+	"font-weight",
+	"font-style",
+	"color",
+	"line-height",
+	"height", // used for point-type paragraph styles
+	"letter-spacing",
+	"opacity",
+	"padding-top",
+	"padding-bottom",
+	"text-align",
+	"text-transform",
+	"mix-blend-mode",
+	"vertical-align" // for superscript
+];
 export {
 	defaultFonts,
 	basicCharacterReplacements,
 	extraCharacterReplacements,
 	caps,
 	align,
-	blendModes
+	blendModes,
+	cssTextStyleProperties
 };
