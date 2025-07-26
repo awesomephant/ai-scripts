@@ -4,6 +4,7 @@ interface fontRule {
 	weight: string;
 	style: string;
 }
+
 const defaultFonts: fontRule[] = [
 	{
 		aifont: "ArialMT",
