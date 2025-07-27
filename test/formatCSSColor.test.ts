@@ -1,4 +1,4 @@
-import formatCSSColor from "../common/formatCSSColor"
+import { formatCSSColor } from "../common/CssUtils"
 
 it("formats rgb", () => {
 	expect(formatCSSColor(12, 34, 56)).toBe("rgb(12,34,56)")

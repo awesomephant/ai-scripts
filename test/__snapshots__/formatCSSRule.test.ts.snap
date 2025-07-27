@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`formats a single rule 1`] = `
+".selector {
+	color:red;
+}
+"
+`;
+
+exports[`formats multiple rules 1`] = `
+".selector {
+	color:red;
+	font-size:2rem;
+	display:block;
+}
+"
+`;

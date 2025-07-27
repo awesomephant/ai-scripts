@@ -16,9 +16,6 @@ limitations under the License.*/
 
 // SR: Adobe Illustrator 2025 Scripting Reference: Javascript (https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
 
-// Pre-defined global Illustrator application object (SR p9)
-declare var app: Application
-
 import {
 	align,
 	blendModes,
@@ -64,12 +61,12 @@ import {
 } from "../common/stringUtils"
 import { isTrue, isFalse } from "../common/booleanUtils"
 import ProgressWindow from "../common/ProgressWindow"
-import formatCSSColor from "../common/formatCSSColor"
 import parseObjectName from "./parseObjectName"
 import cleanObjectName from "./cleanObjectName"
 import parseKeyValueString from "../common/parseKeyValueString"
 import parseDataAttributes from "./parseDataAttributes"
 import uniqAssetName from "./uniqAssetName"
+import { formatCssRule, formatCSSColor } from "../common/CssUtils"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -371,15 +368,6 @@ function main() {
 		var hour = zeroPad(d.getHours(), 2)
 		var min = zeroPad(d.getMinutes(), 2)
 		return year + "-" + month + "-" + date + " " + hour + ":" + min
-	}
-
-	function formatCssRule(selector, obj) {
-		var css = selector + " {\r"
-		for (var k in obj) {
-			css += "\t" + k + ":" + obj[k] + ";\r"
-		}
-		css += "}\r"
-		return css
 	}
 
 	// Test if two rectangles are the same, to within a given tolerance
