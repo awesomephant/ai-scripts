@@ -65,7 +65,8 @@ import {
 import { isTrue, isFalse } from "../common/booleanUtils"
 import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
-import parseObjectName from "../common/parseObjectName"
+import parseObjectName from "./parseObjectName"
+import cleanObjectName from "./cleanObjectName"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -111,7 +112,7 @@ function main() {
 	let docIsSaved: boolean
 	var progressWindow: ProgressWindow
 
-	// TODO We might not need this, ES3 is ancient but it does have JSON
+	// TODO (max) We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
 
 	// Exit on invalid entry conditions
@@ -1087,7 +1088,7 @@ function main() {
 	// ======================================
 
 	// Convert bounds coordinates (e.g. artboardRect, geometricBounds) to CSS-style coords
-	function convertAiBounds(rect) {
+	function convertAiBounds(rect: Bounds) {
 		var x = rect[0],
 			y = -rect[1],
 			w = Math.round(rect[2] - x),
@@ -1098,15 +1099,6 @@ function main() {
 			width: w,
 			height: h
 		}
-	}
-
-	/**
-	 * Remove any annotations and colon separator from an object name
-	 * @param name string
-	 * @returns string
-	 */
-	function cleanObjectName(name: string): string {
-		return makeKeyword(name.replace(/^(.+):.*$/, "$1"))
 	}
 
 	// TODO: prevent duplicate names? or treat duplicate names an an error condition?

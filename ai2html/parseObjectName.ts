@@ -1,5 +1,5 @@
-import { forEach } from "./arrayUtils"
-import { isTrue } from "./booleanUtils"
+import { forEach } from "../common/arrayUtils"
+import { isTrue } from "../common/booleanUtils"
 
 /**
  * Parse data that is encoded in a name

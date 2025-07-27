@@ -1,4 +1,4 @@
-import parseObjectName from "../common/parseObjectName"
+import parseObjectName from "../ai2html/parseObjectName"
 
 it("extracts width and other settings", () => {
 	const s = parseObjectName("Artboard 1:600,image_only")

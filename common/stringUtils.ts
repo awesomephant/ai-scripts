@@ -4,8 +4,10 @@ import {
 	basicCharacterReplacements
 } from "./constants"
 
-// Remove whitespace from beginning and end of a string
-function trim(s: string) {
+/**
+ * Remove whitespace from beginning and end of a string
+ */
+function trim(s: string): string {
 	return s.replace(/^[\s\uFEFF\xA0\x03]+|[\s\uFEFF\xA0\x03]+$/g, "")
 }
 
