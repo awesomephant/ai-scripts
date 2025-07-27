@@ -20,24 +20,53 @@ limitations under the License.*/
 declare var app: Application
 
 import {
-	defaultSettings,
-	defaultFonts,
-	basicCharacterReplacements,
-	extraCharacterReplacements,
-	blendModes,
 	align,
+	blendModes,
 	caps,
-	cssTextStyleProperties
+	cssTextStyleProperties,
+	defaultFonts,
+	defaultSettings
 } from "./constants"
 
+import {
+	arraySubtract,
+	contains,
+	extend,
+	filter,
+	find,
+	firstBy,
+	forEach,
+	forEachProperty,
+	map,
+	indexOf,
+	objectDiff,
+	some,
+	toArray
+} from "../common/arrayUtils"
 import initJSON from "../common/json2"
 import T from "../common/timer"
-import { forEach } from "../common/arrayUtils"
+
+import {
+	addEnclosingTag,
+	cleanHtmlText,
+	encodeHtmlEntities,
+	findHtmlTag,
+	makeKeyword,
+	replaceChars,
+	straightenCurlyQuotes,
+	straightenCurlyQuotesInsideAngleBrackets,
+	stringToLines,
+	stripTag,
+	trim,
+	truncateString,
+	zeroPad
+} from "../common/stringUtils"
+
 import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
 import parseObjectName from "../common/parseObjectName"
 
-import type { ai2HTMLSettings, ImageFormat, FontRule } from "./types"
+import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -322,229 +351,6 @@ function main() {
 	// =================================
 	// JS utility functions
 	// =================================
-
-	function map(arr, cb) {
-		var arr2 = []
-		for (var i = 0, n = arr.length; i < n; i++) {
-			arr2.push(cb(arr[i], i))
-		}
-		return arr2
-	}
-
-	function filter(arr, test) {
-		var filtered = []
-		for (var i = 0, n = arr.length; i < n; i++) {
-			if (test(arr[i], i)) {
-				filtered.push(arr[i])
-			}
-		}
-		return filtered
-	}
-
-	// obj: value or test function
-	function indexOf(arr, obj) {
-		var test = typeof obj == "function" ? obj : null
-		for (var i = 0, n = arr.length; i < n; i++) {
-			if (test ? test(arr[i]) : arr[i] === obj) {
-				return i
-			}
-		}
-		return -1
-	}
-
-	function find(arr, obj) {
-		var i = indexOf(arr, obj)
-		return i == -1 ? null : arr[i]
-	}
-
-	function contains(arr, obj) {
-		return indexOf(arr, obj) >= 0
-	}
-
-	// alias for contains() with function arg
-	function some(arr, cb) {
-		return indexOf(arr, cb) >= 0
-	}
-
-	function extend(o) {
-		for (var i = 1; i < arguments.length; i++) {
-			forEachProperty(arguments[i], add)
-		}
-		function add(v, k) {
-			o[k] = v
-		}
-		return o
-	}
-
-	function forEachProperty(o, cb) {
-		for (var k in o) {
-			if (o.hasOwnProperty(k)) {
-				cb(o[k], k)
-			}
-		}
-	}
-
-	// Return new object containing properties of a that are missing or different in b
-	// Return null if output object would be empty
-	// a, b: JS objects
-	function objectDiff(a: any, b: any) {
-		var diff: any = null
-		for (var k in a) {
-			if (a[k] != b[k] && a.hasOwnProperty(k)) {
-				diff = diff || {}
-				diff[k] = a[k]
-			}
-		}
-		return diff
-	}
-
-	// return elements in array "a" but not in array "b"
-	function arraySubtract(a: any[], b: any[]) {
-		var diff = [],
-			alen = a.length,
-			blen = b.length,
-			i,
-			j
-		for (i = 0; i < alen; i++) {
-			diff.push(a[i])
-			for (j = 0; j < blen; j++) {
-				if (a[i] === b[j]) {
-					diff.pop()
-					break
-				}
-			}
-		}
-		return diff
-	}
-
-	// Copy elements of an array-like object to an array
-	function toArray(obj) {
-		var arr = []
-		for (var i = 0, n = obj.length; i < n; i++) {
-			arr[i] = obj[i] // about 2x faster than push() (apparently)
-			// arr.push(obj[i]);
-		}
-		return arr
-	}
-
-	// multiple key sorting function based on https://github.com/Teun/thenBy.js
-	// first by length of name, then by population, then by ID
-	// data.sort(
-	//     firstBy(function (v1, v2) { return v1.name.length - v2.name.length; })
-	//     .thenBy(function (v1, v2) { return v1.population - v2.population; })
-	//     .thenBy(function (v1, v2) { return v1.id - v2.id; });
-	// );
-	function firstBy(f1, f2) {
-		var compare = f2
-			? function (a, b) {
-					return f1(a, b) || f2(a, b)
-			  }
-			: f1
-		compare.thenBy = function (f) {
-			return firstBy(compare, f)
-		}
-		return compare
-	}
-
-	// Remove whitespace from beginning and end of a string
-	function trim(s: string) {
-		return s.replace(/^[\s\uFEFF\xA0\x03]+|[\s\uFEFF\xA0\x03]+$/g, "")
-	}
-
-	// splits a string into non-empty lines
-	function stringToLines(str: string) {
-		var empty = /^\s*$/
-		return filter(str.split(/[\r\n\x03]+/), function (line) {
-			return !empty.test(line)
-		})
-	}
-
-	function zeroPad(val: number, digits: number) {
-		var str = String(val)
-		while (str.length < digits) str = "0" + str
-		return str
-	}
-
-	function truncateString(str: string, maxlen: number, useEllipsis: boolean) {
-		// TODO: add ellipsis, truncate at word boundary
-		if (str.length > maxlen) {
-			str = str.substr(0, maxlen)
-			if (useEllipsis) str += "..."
-		}
-		return str
-	}
-
-	function makeKeyword(text: string): string {
-		return text.replace(/[^A-Za-z0-9_-]+/g, "_")
-	}
-
-	// TODO: don't convert ampersand in pre-existing entities (e.g. "&quot;" -> "&amp;quot;")
-	function encodeHtmlEntities(text: string) {
-		return replaceChars(text, [
-			...basicCharacterReplacements,
-			...extraCharacterReplacements
-		])
-	}
-
-	function cleanHtmlText(text) {
-		// Characters "<>& are not replaced
-		return replaceChars(text, extraCharacterReplacements)
-	}
-
-	function replaceChars(str, replacements) {
-		var charCode
-		for (var i = 0, n = replacements.length; i < n; i++) {
-			charCode = replacements[i]
-			if (str.indexOf(charCode[0]) > -1) {
-				str = str.replace(new RegExp(charCode[0], "g"), charCode[1])
-			}
-		}
-		return str
-	}
-
-	function straightenCurlyQuotesInsideAngleBrackets(text) {
-		// This function's purpose is to fix quoted properties in HTML tags that were
-		// typed into text blocks (Illustrator tends to automatically change single
-		// and double quotes to curly quotes).
-		// thanks to jashkenas
-		// var quoteFinder = /[\u201C‘’\u201D]([^\n]*?)[\u201C‘’\u201D]/g;
-		var tagFinder = /<[^\n]+?>/g
-		return text.replace(tagFinder, function (tag) {
-			return straightenCurlyQuotes(tag)
-		})
-	}
-
-	function straightenCurlyQuotes(str) {
-		return str.replace(/[\u201C\u201D]/g, '"').replace(/[‘’]/g, "'")
-	}
-
-	// Not very robust -- good enough for printing a warning
-	function findHtmlTag(str) {
-		var match
-		if (str.indexOf("<") > -1) {
-			// bypass regex check
-			match = /<(\w+)[^>]*>/.exec(str)
-		}
-		return match ? match[1] : null
-	}
-
-	function addEnclosingTag(tagName, str) {
-		var openTag = "<" + tagName
-		var closeTag = "</" + tagName + ">"
-		if (new RegExp(openTag).test(str) === false) {
-			str = openTag + ">\r" + str
-		}
-		if (new RegExp(closeTag).test(str) === false) {
-			str = str + "\r" + closeTag
-		}
-		return str
-	}
-
-	function stripTag(tagName, str) {
-		var open = new RegExp("<" + tagName + "[^>]*>", "g")
-		var close = new RegExp("</" + tagName + ">", "g")
-		return str.replace(open, "").replace(close, "")
-	}
 
 	// precision: number of decimals in rounded number
 	function roundTo(number, precision) {
@@ -2741,7 +2547,7 @@ function main() {
 		return !testLayerArtboardIntersection(null, ab)
 	}
 
-	function testLayerArtboardIntersection(lyr: Layer, ab: Artboard) {
+	function testLayerArtboardIntersection(lyr: Layer | null, ab: Artboard) {
 		if (lyr) {
 			return layerIsVisible(lyr)
 		} else {
@@ -2763,8 +2569,8 @@ function main() {
 			return testBoundsIntersection(item.visibleBounds, ab.artboardRect)
 		}
 
-		function groupIsVisible(group) {
-			if (group.hidden) return
+		function groupIsVisible(group: GroupItem): boolean {
+			if (group.hidden) return false
 			return (
 				some(group.pageItems, itemIsVisible) ||
 				some(group.groupItems, groupIsVisible)
