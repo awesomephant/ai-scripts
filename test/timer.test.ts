@@ -9,6 +9,6 @@ test("calls onstop function", (done) => {
 		T.stop("test")
 		done()
 		expect(mockOnstop).toHaveBeenCalled()
-		expect(mockOnstop).toHaveBeenCalledWith("test", expect.closeTo(2, 1))
-	}, 2000)
+		expect(mockOnstop).toHaveBeenCalledWith("test", expect.closeTo(1, 1))
+	}, 1000)
 })

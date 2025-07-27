@@ -1,28 +1,35 @@
 import replaceSvgIds from "../common/replaceSvgIds"
 
-test("id cache persists between calls", () => {
-	var svgIds // index of ids
+test("persist known id list", () => {
+	let knownIds: string[] = [] // index of ids
+	let { svg, ids } = replaceSvgIds('id="dot_1_"', "", knownIds)
 
-	expect(replaceSvgIds('id="dot_1_"', "ai2html-")).toBe(
-		'id="ai2html-dot" data-name="dot"'
-	)
-	expect(replaceSvgIds('id="dot_1_"', "ai2html-")).toBe(
-		'id="ai2html-dot-2" data-name="dot"'
-	)
+	expect({ svg, ids }).toStrictEqual({
+		svg: 'id="dot" data-name="dot"',
+		ids: ["dot"]
+	})
+
+	knownIds = ids
+	expect(replaceSvgIds('id="dot_1_"', "", knownIds)).toStrictEqual({
+		svg: 'id="dot-2" data-name="dot"',
+		ids: ["dot", "dot-2"]
+	})
 })
 
-test("hex codes are replaced", () => {
-	var svgIds // index of ids
-
-	expect(replaceSvgIds('id="_x5F_a_x5F_b_x5F__2_"')).toBe(
-		'id="_a_b_" data-name="_a_b_"'
-	)
+test("replace hex codes", () => {
+	expect(replaceSvgIds('id="_x5F_a_x5F_b_x5F__2_"')).toStrictEqual({
+		svg: 'id="_a_b_" data-name="_a_b_"',
+		ids: ["_a_b_"]
+	})
 })
 
-test("tests", () => {
-	var svgIds // index of ids
-
-	expect(replaceSvgIds('id="rect_4_" id="rect_8_"')).toBe(
-		'id="rect" data-name="rect" id="rect-2" data-name="rect"'
-	)
+test("warn on duplicate", () => {
+	const ondupe = jest.fn()
+	const res = replaceSvgIds('id="rect_4_" id="rect_8_"', "", [], ondupe)
+	expect(res).toStrictEqual({
+		svg: 'id="rect" data-name="rect" id="rect-2" data-name="rect"',
+		ids: ["rect", "rect-2"]
+	})
+	expect(ondupe).toHaveBeenCalled()
+	expect(ondupe).toHaveBeenCalledWith(["rect"])
 })

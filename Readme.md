@@ -13,6 +13,7 @@ Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html)
 
 - Maintenance
   - [x] Use modern Javascript formatting
+  - [ ] Use functional programming style
   - [ ] Use typescript, transpile to es3
   - [x] Extract NYT-specific code into options (?)
   - [ ] Use hashmaps instead of arrays for typeface etc. lookup tables
