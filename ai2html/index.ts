@@ -66,7 +66,7 @@ import cleanObjectName from "./cleanObjectName"
 import parseKeyValueString from "../common/parseKeyValueString"
 import parseDataAttributes from "./parseDataAttributes"
 import uniqAssetName from "./uniqAssetName"
-import { formatCssRule, formatCSSColor } from "../common/CssUtils"
+import { formatCssRule, formatCssColor } from "../common/CssUtils"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -1559,7 +1559,7 @@ function main() {
 				color.typename +
 				" fill. Please fill it with an RGB color."
 		}
-		o.color = formatCSSColor(r, g, b, opacity)
+		o.color = formatCssColor(r, g, b, opacity)
 		return o
 	}
 
