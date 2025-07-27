@@ -2,7 +2,7 @@ import T from "../common/timer"
 
 const mockOnstop = jest.fn()
 
-test("calls onstop function", (done) => {
+it("calls onstop function", (done) => {
 	T.onstop = mockOnstop
 	T.start("test")
 	setTimeout(() => {

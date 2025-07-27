@@ -1,4 +1,6 @@
-/// <reference types="@typescript/lib-dom"/>
+//@ts-nocheck because this uses browser apis for which we don't have type checking
+
+import { trim } from "../common/stringUtils"
 
 interface ResizerOptions {
 	namespace: string
@@ -6,35 +8,50 @@ interface ResizerOptions {
 
 /**
  * Builds a resizer script and returns the source as a string
- * @param containerId
+ * @param containerId string
  * @returns string
  */
-export default function makeResizerScript(containerId: string): string {
+
+export default function makeResizerScript(
+	containerId: string,
+	namespace: string
+) {
 	// The resizer function is embedded in the HTML page -- external variables must
 	// be passed in.
-
+	//
 	// TODO: Consider making artboard images position:absolute and setting
 	//   height as a padding % (calculated from the aspect ratio of the graphic).
 	//   This will correctly set the initial height of the graphic before
 	//   an image is loaded.
-
-	var resizer = function (containerId: string, opts: ResizerOptions) {
-		var nameSpace = opts.namespace || ""
+	//
+	var resizer = function (containerId, opts) {
+		const ns = opts.namespace || ""
 		var containers = findContainers(containerId)
 		containers.forEach(resize)
 
 		function resize(container) {
 			var onResize = throttle(update, 200)
 			var waiting = !!window.IntersectionObserver
-			var observer: IntersectionObserver
+			var observer
 			update()
 
 			document.addEventListener("DOMContentLoaded", update)
 			window.addEventListener("resize", onResize)
 
+			// NYT Scoop-specific code
+			if (opts.setup) {
+				opts.setup(container).on("cleanup", cleanup)
+			}
+
+			function cleanup() {
+				document.removeEventListener("DOMContentLoaded", update)
+				window.removeEventListener("resize", onResize)
+				if (observer) observer.disconnect()
+			}
+
 			function update() {
 				var artboards = selectChildren(
-						"." + nameSpace + "artboard[data-min-width]",
+						"." + ns + "artboard[data-min-width]",
 						container
 					),
 					width = Math.round(container.getBoundingClientRect().width)
@@ -45,9 +62,7 @@ export default function makeResizerScript(containerId: string): string {
 						maxwidth = el.getAttribute("data-max-width")
 					if (+minwidth <= width && (+maxwidth >= width || maxwidth === null)) {
 						if (!waiting) {
-							selectChildren("." + nameSpace + "aiImg", el).forEach(
-								updateImgSrc
-							)
+							selectChildren("." + ns + "aiImg", el).forEach(updateImgSrc)
 							selectChildren("video", el).forEach(updateVideoSrc)
 						}
 						el.style.display = "block"
@@ -149,7 +164,7 @@ export default function makeResizerScript(containerId: string): string {
 
 	var optStr =
 		'{namespace: "' +
-		nameSpace +
+		namespace +
 		'", setup: window.setupInteractive || window.getComponent}'
 
 	// convert resizer function to JS source code

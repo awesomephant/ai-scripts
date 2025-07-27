@@ -1,6 +1,6 @@
 import roundTo from "../common/roundTo"
 
-test("works", () => {
+it("works", () => {
 	expect(roundTo(1.3472915, 3)).toBe(1.347)
 	expect(roundTo(2.14, 0)).toBe(2)
 	expect(roundTo(2.14, 1)).toBe(2.1)
@@ -10,6 +10,6 @@ test("works", () => {
 	expect(roundTo(2.957, 2)).toBe(2.96)
 })
 
-test("defaults to 0 digits", () => {
+it("defaults to 0 digits", () => {
 	expect(roundTo(2.943)).toBe(3)
 })

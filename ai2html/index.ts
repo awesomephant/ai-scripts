@@ -3953,7 +3953,7 @@ function main() {
 			// resizer CSS overrides the script setting
 			!isTrue(settings.include_resizer_css)
 		) {
-			responsiveJs = makeResizerScript(containerId)
+			responsiveJs = makeResizerScript(containerId, nameSpace)
 			containerClasses += " ai2html-responsive"
 		}
 

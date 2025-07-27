@@ -1,5 +1,6 @@
 {
 	"name": "ai-scripts",
+	"license": "UNLICENSED",
 	"devDependencies": {
 		"@jest/globals": "^30.0.5",
 		"@rollup/plugin-typescript": "^12.1.4",
