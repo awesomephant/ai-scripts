@@ -110,6 +110,10 @@ function stripTag(tagName: string, str: string) {
 	return str.replace(open, "").replace(close, "")
 }
 
+function parseAsArray(str: string) {
+	str = trim(str).replace(/[\s,]+/g, ",")
+	return str.length === 0 ? [] : str.split(",")
+}
 export {
 	trim,
 	stringToLines,
@@ -123,5 +127,6 @@ export {
 	straightenCurlyQuotes,
 	findHtmlTag,
 	addEnclosingTag,
-	stripTag
+	stripTag,
+	parseAsArray
 }

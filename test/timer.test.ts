@@ -1,6 +1,6 @@
 import T from "../common/timer"
 
-const mockOnstop = jest.fn((key, t) => {})
+const mockOnstop = jest.fn()
 
 test("calls onstop function", (done) => {
 	T.onstop = mockOnstop

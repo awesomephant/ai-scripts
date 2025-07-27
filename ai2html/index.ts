@@ -45,7 +45,7 @@ import {
 } from "../common/arrayUtils"
 import initJSON from "../common/json2"
 import T from "../common/timer"
-
+import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import {
 	addEnclosingTag,
 	cleanHtmlText,
@@ -59,7 +59,8 @@ import {
 	stripTag,
 	trim,
 	truncateString,
-	zeroPad
+	zeroPad,
+	parseAsArray
 } from "../common/stringUtils"
 
 import ProgressWindow from "../common/ProgressWindow"
@@ -67,6 +68,7 @@ import formatCSSColor from "../common/formatCSSColor"
 import parseObjectName from "../common/parseObjectName"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
+import makeResizerScript from "./makeResizerScript"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -111,6 +113,7 @@ function main() {
 	// TODO We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
 
+	// Exit on invalid entry conditions
 	try {
 		if (!isTestedIllustratorVersion(app.version)) {
 			warn("Ai2html has not been tested on this version of Illustrator.")
@@ -118,31 +121,28 @@ function main() {
 		if (!app.documents.length) {
 			error("No documents are open")
 		}
-
 		if (!String(app.activeDocument.fullName)) {
 			error(
 				"ai2html is unable to run because Illustrator is confused by this document's file path. Does the path contain any forward slashes or other unusual characters?"
 			)
 		}
 		if (!String(app.activeDocument.path)) {
-			error("Please save your Illustrator file before running this script")
+			error("Please save your Illustrator file before running ai2html")
 		}
 		if (app.activeDocument.documentColorSpace !== DocumentColorSpace.RGB) {
 			error(
-				'You should change the document color mode to "RGB" before running ai2html (File > Document Color Mode > RGB Color).'
+				'Please change the document color mode to "RGB" before running ai2html (File > Document Color Mode > RGB Color).'
 			)
 		}
 		if (app.activeDocument.activeLayer.name == "Isolation Mode") {
-			error(
-				"ai2html is unable to run because the document is in Isolation Mode."
-			)
+			error("ai2html cannot run because the document is in Isolation Mode.")
 		}
 		if (
 			app.activeDocument.activeLayer.name == "<Opacity Mask>" &&
 			app.activeDocument.layers.length == 1
 		) {
 			// TODO: find a better way to detect this condition (mask can be renamed)
-			error("ai2html is unable to run because you are editing an Opacity Mask.")
+			error("ai2html cannot run because you are editing an Opacity Mask.")
 		}
 
 		// initialize script settings
@@ -163,8 +163,8 @@ function main() {
 			name: "ai2html progress",
 			steps: calcProgressBarSteps()
 		})
-		validateArtboardNames(docSettings) // warn about duplicate artboard names
 
+		validateArtboardNames(docSettings) // warn about duplicate artboard names
 		renderDocument(docSettings, textBlockData.code)
 	} catch (e) {
 		errors.push(formatError(e))
@@ -706,11 +706,6 @@ function main() {
 	// ai2html program state and settings
 	// ==================================
 
-	function isTestedIllustratorVersion(version: string) {
-		var majorNum = parseInt(version)
-		return majorNum >= 18 && majorNum <= 29 // Illustrator CC 2014 through 2025
-	}
-
 	function groupArtboardsForOutput(settings) {
 		let groups = []
 		forEachUsableArtboard(function (ab) {
@@ -1066,13 +1061,8 @@ function main() {
 		})
 	}
 
-	function parseAsArray(str) {
-		str = trim(str).replace(/[\s,]+/g, ",")
-		return str.length === 0 ? [] : str.split(",")
-	}
-
 	// Show alert or prompt; return true if promo image should be generated
-	function showCompletionAlert(showPrompt) {
+	function showCompletionAlert(showPrompt: boolean = false) {
 		var rule = "\n================\n"
 		var alertText, alertHed, makePromo
 
@@ -3896,164 +3886,6 @@ function main() {
 		return lines.join("\n")
 	}
 
-	function getResizerScript(containerId) {
-		// The resizer function is embedded in the HTML page -- external variables must
-		// be passed in.
-
-		// TODO: Consider making artboard images position:absolute and setting
-		//   height as a padding % (calculated from the aspect ratio of the graphic).
-		//   This will correctly set the initial height of the graphic before
-		//   an image is loaded.
-
-		var resizer = function (containerId, opts) {
-			var nameSpace = opts.namespace || ""
-			var containers = findContainers(containerId)
-			containers.forEach(resize)
-
-			function resize(container) {
-				var onResize = throttle(update, 200)
-				var waiting = !!window.IntersectionObserver
-				var observer
-				update()
-
-				document.addEventListener("DOMContentLoaded", update)
-				window.addEventListener("resize", onResize)
-
-				function update() {
-					var artboards = selectChildren(
-							"." + nameSpace + "artboard[data-min-width]",
-							container
-						),
-						width = Math.round(container.getBoundingClientRect().width)
-
-					// Set artboard visibility based on container width
-					artboards.forEach(function (el) {
-						var minwidth = el.getAttribute("data-min-width"),
-							maxwidth = el.getAttribute("data-max-width")
-						if (
-							+minwidth <= width &&
-							(+maxwidth >= width || maxwidth === null)
-						) {
-							if (!waiting) {
-								selectChildren("." + nameSpace + "aiImg", el).forEach(
-									updateImgSrc
-								)
-								selectChildren("video", el).forEach(updateVideoSrc)
-							}
-							el.style.display = "block"
-						} else {
-							el.style.display = "none"
-						}
-					})
-
-					// Initialize lazy loading on first call
-					if (waiting && !observer) {
-						if (elementInView(container)) {
-							waiting = false
-							update()
-						} else {
-							observer = new IntersectionObserver(onIntersectionChange, {
-								rootMargin: "800px"
-							})
-							observer.observe(container)
-						}
-					}
-				}
-
-				function onIntersectionChange(entries) {
-					// There may be multiple entries relating to the same container
-					// (captured at different times)
-					var isIntersecting = entries.reduce(function (memo, entry) {
-						return memo || entry.isIntersecting
-					}, false)
-					if (isIntersecting) {
-						waiting = false
-						// update: don't remove -- we need the observer to trigger an update
-						// when a hidden map becomes visible after user interaction
-						// (e.g. when an accordion menu or tab opens)
-						// observer.disconnect();
-						// observer = null;
-						update()
-					}
-				}
-			}
-
-			function findContainers(id) {
-				// support duplicate ids on the page
-				return selectChildren(".ai2html-responsive", document).filter(function (
-					el
-				) {
-					if (el.getAttribute("id") != id) return false
-					if (el.classList.contains("ai2html-resizer")) return false
-					el.classList.add("ai2html-resizer")
-					return true
-				})
-			}
-
-			// Replace blank placeholder image with actual image
-			function updateImgSrc(img) {
-				var src = img.getAttribute("data-src")
-				if (src && img.getAttribute("src") != src) {
-					img.setAttribute("src", src)
-				}
-			}
-
-			function updateVideoSrc(el) {
-				var src = el.getAttribute("data-src")
-				if (src && !el.hasAttribute("src")) {
-					el.setAttribute("src", src)
-				}
-			}
-
-			function elementInView(el) {
-				var bounds = el.getBoundingClientRect()
-				return bounds.top < window.innerHeight && bounds.bottom > 0
-			}
-
-			function selectChildren(selector, parent) {
-				return parent
-					? Array.prototype.slice.call(parent.querySelectorAll(selector))
-					: []
-			}
-
-			// based on underscore.js
-			function throttle(func, wait) {
-				var timeout = null,
-					previous = 0
-				function run() {
-					previous = Date.now()
-					timeout = null
-					func()
-				}
-				return function () {
-					var remaining = wait - (Date.now() - previous)
-					if (remaining <= 0 || remaining > wait) {
-						clearTimeout(timeout)
-						run()
-					} else if (!timeout) {
-						timeout = setTimeout(run, remaining)
-					}
-				}
-			}
-		}
-
-		var optStr =
-			'{namespace: "' +
-			nameSpace +
-			'", setup: window.setupInteractive || window.getComponent}'
-
-		// convert resizer function to JS source code
-		var resizerJs =
-			"(" +
-			trim(resizer.toString().replace(/ {2}/g, "\t")) + // indent with tabs
-			')("' +
-			containerId +
-			'", ' +
-			optStr +
-			");"
-		return '<script type="text/javascript">\r\t' + resizerJs + "\r</script>\r"
-	}
-
 	// Write an HTML page to a file for NYT Preview
 	function outputLocalPreviewPage(
 		textForFile,
@@ -4121,7 +3953,7 @@ function main() {
 			// resizer CSS overrides the script setting
 			!isTrue(settings.include_resizer_css)
 		) {
-			responsiveJs = getResizerScript(containerId)
+			responsiveJs = makeResizerScript(containerId)
 			containerClasses += " ai2html-responsive"
 		}
 
