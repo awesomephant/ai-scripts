@@ -63,13 +63,13 @@ import {
 	parseAsArray
 } from "../common/stringUtils"
 import { isTrue, isFalse } from "../common/booleanUtils"
-
 import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
 import parseObjectName from "../common/parseObjectName"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
+import cleanCodeBlock from "./cleanCodeBlock"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -931,23 +931,6 @@ function main() {
 		})
 	}
 
-	// Clean the contents of custom JS, CSS and HTML blocks
-	// (e.g. undo Illustrator's automatic quote conversion, where applicable)
-	function cleanCodeBlock(type, raw) {
-		var clean = ""
-		if (type.indexOf("html") >= 0) {
-			clean = cleanHtmlText(straightenCurlyQuotesInsideAngleBrackets(raw))
-		} else if (type == "js") {
-			// TODO: consider preserving curly quotes inside quoted strings
-			clean = straightenCurlyQuotes(raw)
-			clean = addEnclosingTag("script", clean)
-		} else if (type == "css") {
-			clean = straightenCurlyQuotes(raw)
-			clean = stripTag("style", clean)
-		}
-		return clean
-	}
-
 	function createSettingsBlock(settings) {
 		const bounds = getAllArtboardBounds()
 		const fontSize = 15
@@ -1242,11 +1225,11 @@ function main() {
 
 	// Get artboard-specific settings by parsing the artboard name
 	// (e.g.  Artboard_1:responsive)
-	function getArtboardSettings(ab) {
+	function getArtboardSettings(ab: Artboard) {
 		return parseObjectName(ab.name)
 	}
 
-	function getArtboardResponsiveness(ab, settings) {
+	function getArtboardResponsiveness(ab: Artboard, settings: ai2HTMLSettings) {
 		var opts = getArtboardSettings(ab)
 		var r = settings.responsiveness // Default to document's responsiveness setting
 		if (opts.dynamic) r = "dynamic" // ab name has ":dynamic" appended

@@ -6,21 +6,23 @@ it("wraps basic strings", () => {
 })
 
 it("does nothing when tag already present", () => {
-	expect(addEnclosingTag("script", "<script></script>")).toBe(
-		"<script></script>"
-	)
-	expect(
-		addEnclosingTag("script", '<script type="text/javascript"></script>')
-	).toBe('<script type="text/javascript"></script>')
+	const s = addEnclosingTag("script", "<script></script>")
+	expect(s).toBe("<script></script>")
 
-	expect(
-		addEnclosingTag("style", "\t<style>\r{body: margin: 0}\r</style> ")
-	).toBe("\t<style>\r{body: margin: 0}\r</style> ")
+	const s2 = addEnclosingTag(
+		"script",
+		'<script type="text/javascript"></script>'
+	)
+	expect(s2).toBe('<script type="text/javascript"></script>')
+
+	const s3 = addEnclosingTag("style", "\t<style>\r{body: margin: 0}\r</style>")
+	expect(s3).toBe("\t<style>\r{body: margin: 0}\r</style>")
 })
 
 it("adds missing closing tag", () => {
 	expect(addEnclosingTag("script", "<script>")).toBe("<script></script>")
 })
+
 it("adds missing opening tag", () => {
 	expect(addEnclosingTag("script", "</script>")).toBe("<script></script>")
 })

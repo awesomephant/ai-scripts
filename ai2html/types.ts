@@ -9,6 +9,15 @@ export interface FontRule {
 	style: string
 }
 
+export type SettingsTextBlockMode =
+	| "css"
+	| "js"
+	| "html"
+	| "settings"
+	| "text"
+	| "html-before"
+	| "html-after"
+
 export interface ai2HTMLSettings {
 	namespace: string
 	settings_version: string
