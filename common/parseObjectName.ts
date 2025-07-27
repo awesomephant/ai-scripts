@@ -1,23 +1,32 @@
 import { forEach } from "./arrayUtils"
+import { isTrue } from "./booleanUtils"
 
-// Parse data that is encoded in a name
-// This data is appended to the name of an object (layer or artboard).
-// Examples: Artboard1:600,fixed  Layer1:svg  Layer2:png
-export default function parseObjectName(name) {
-	// capture portion of name after colon
+/**
+ * Parse data that is encoded in a name
+ * This data is appended to the name of an object (layer or artboard).
+ * Examples: Artboard1:600,fixed  Layer1:svg  Layer2:png
+ * @param name
+ * @returns
+ */
+export default function parseObjectName(name: string): any {
 	var settingsStr = (/:(.*)/.exec(name) || [])[1] || ""
-	var settings = {}
-	// parse old-style width declaration
+
+	// 1. Capture portion of name after colon
+	var settings: any = {}
+
+	// 2. Parse old-style width declaration
 	var widthStr = (/^ai2html-(\d+)/.exec(name) || [])[1]
 	if (widthStr) {
 		settings.width = parseFloat(widthStr)
 	}
-	// remove suffixes added by copying
+
+	// 3. Remove suffixes added by copying
 	settingsStr = settingsStr.replace(/ copy.*/i, "")
-	// parse comma-delimited variables
-	forEach(settingsStr.split(","), function (part) {
-		var eq = part.indexOf("=")
-		var name, value
+
+	// 4. Parse comma-delimited variables
+	forEach(settingsStr.split(","), (part) => {
+		const eq = part.indexOf("=")
+		let name, value
 		if (/^\d+$/.test(part)) {
 			name = "width"
 			value = part

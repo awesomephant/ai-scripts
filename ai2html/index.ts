@@ -62,6 +62,7 @@ import {
 	zeroPad,
 	parseAsArray
 } from "../common/stringUtils"
+import { isTrue, isFalse } from "../common/booleanUtils"
 
 import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
@@ -646,16 +647,6 @@ function main() {
 			warn(msg)
 			oneTimeWarnings.push(id)
 		}
-	}
-
-	// accept inconsistent true/yes setting value
-	function isTrue(val) {
-		return val == "true" || val == "yes" || val === true
-	}
-
-	// accept inconsistent false/no setting value
-	function isFalse(val) {
-		return val == "false" || val == "no" || val === false
 	}
 
 	function unlockObjects() {
