@@ -1,19 +1,19 @@
-interface ProgressBarOptions {
+interface ProgressWindowOptions {
 	steps?: number
 	name?: string
 }
 
-const defaultOptions: ProgressBarOptions = {
+const defaultOptions: ProgressWindowOptions = {
 	steps: 0,
 	name: "Progress"
 }
 
-export default class ProgressBar {
-	opts: ProgressBarOptions = {}
+export default class ProgressWindow {
+	opts: ProgressWindowOptions = {}
 	currentStep: number = 0
 	win: any
 
-	constructor(options: ProgressBarOptions = {}) {
+	constructor(options: ProgressWindowOptions = {}) {
 		this.opts = { ...defaultOptions, ...options }
 		this.currentStep = 0
 		this.win = new Window("palette", this.opts.name, [150, 150, 600, 260])

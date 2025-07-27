@@ -14,6 +14,9 @@ limitations under the License.*/
 
 /// <reference types="types-for-adobe/Illustrator/2022"/>
 
+// SR: Adobe Illustrator 2025 Scripting Reference: Javascript (https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
+
+// Pre-defined global Illustrator application object (SR p9)
 declare var app: Application
 
 import {
@@ -29,8 +32,10 @@ import {
 
 import initJSON from "../common/json2"
 import T from "../common/timer"
-import ProgressBar from "../common/ProgressBar"
+import { forEach } from "../common/arrayUtils"
+import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
+import parseObjectName from "../common/parseObjectName"
 
 import type { ai2HTMLSettings, ImageFormat, FontRule } from "./types"
 
@@ -72,7 +77,7 @@ function main() {
 	let docPath: string
 	let docSlug: string
 	let docIsSaved: boolean
-	var progressBar: Progressbar
+	var progressWindow: ProgressWindow
 
 	// TODO We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
@@ -125,7 +130,7 @@ function main() {
 			createSettingsBlock(docSettings)
 		}
 
-		progressBar = new ProgressBar({
+		progressWindow = new ProgressWindow({
 			name: "ai2html progress",
 			steps: calcProgressBarSteps()
 		})
@@ -137,7 +142,7 @@ function main() {
 	}
 
 	restoreDocumentState()
-	if (progressBar) progressBar.close()
+	if (progressWindow) progressWindow.close()
 
 	// ==========================================
 	// Save the AI document (if needed)
@@ -242,19 +247,19 @@ function main() {
 				textFrames = []
 				textData = { html: "", styles: [] }
 			} else {
-				progressBar.setTitle(docArtboardName + ": Generating text...")
+				progressWindow.setTitle(docArtboardName + ": Generating text...")
 				textFrames = getTextFramesByArtboard(activeArtboard, masks, settings)
 				textData = convertTextFrames(textFrames, activeArtboard, settings)
 			}
 
-			progressBar.step()
+			progressWindow.step()
 
 			// ==========================
 			// Generate artboard image(s)
 			// ==========================
 
 			if (isTrue(settings.write_image_files)) {
-				progressBar.setTitle(docArtboardName + ": Capturing image...")
+				progressWindow.setTitle(docArtboardName + ": Capturing image...")
 				imageData = convertArtItems(activeArtboard, textFrames, masks, settings)
 			} else {
 				imageData = { html: "" }
@@ -276,7 +281,7 @@ function main() {
 				}
 			}
 
-			progressBar.step()
+			progressWindow.step()
 
 			//=====================================
 			// Finish generating artboard HTML and CSS
@@ -317,12 +322,6 @@ function main() {
 	// =================================
 	// JS utility functions
 	// =================================
-
-	function forEach(arr, cb) {
-		for (var i = 0, n = arr.length; i < n; i++) {
-			cb(arr[i], i)
-		}
-	}
 
 	function map(arr, cb) {
 		var arr2 = []
@@ -1452,47 +1451,6 @@ function main() {
 			max = maxAB.effectiveWidth
 		}
 		return [min, max]
-	}
-
-	// Parse data that is encoded in a name
-	// This data is appended to the name of an object (layer or artboard).
-	// Examples: Artboard1:600,fixed  Layer1:svg  Layer2:png
-	function parseObjectName(name) {
-		// capture portion of name after colon
-		var settingsStr = (/:(.*)/.exec(name) || [])[1] || ""
-		var settings = {}
-		// parse old-style width declaration
-		var widthStr = (/^ai2html-(\d+)/.exec(name) || [])[1]
-		if (widthStr) {
-			settings.width = parseFloat(widthStr)
-		}
-		// remove suffixes added by copying
-		settingsStr = settingsStr.replace(/ copy.*/i, "")
-		// parse comma-delimited variables
-		forEach(settingsStr.split(","), function (part) {
-			var eq = part.indexOf("=")
-			var name, value
-			if (/^\d+$/.test(part)) {
-				name = "width"
-				value = part
-			} else if (eq > 0) {
-				name = part.substr(0, eq)
-				value = part.substr(eq + 1)
-			} else if (part) {
-				// assuming setting is a flag
-				name = part
-				value = "true"
-			}
-			if (name && value) {
-				if (/^\d+$/.test(value)) {
-					value = parseFloat(value)
-				} else if (isTrue(value)) {
-					value = true
-				}
-				settings[name] = value
-			}
-		})
-		return settings
 	}
 
 	// Get artboard-specific settings by parsing the artboard name
@@ -4350,7 +4308,7 @@ function main() {
 			ariaAttrs += ' aria-describedby="' + altTextId + '"'
 		}
 
-		progressBar.setTitle("Writing HTML output...")
+		progressWindow.setTitle("Writing HTML output...")
 
 		if (
 			isTrue(settings.include_resizer_script) &&
