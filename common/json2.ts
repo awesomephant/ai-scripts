@@ -1,3 +1,9 @@
+//@ts-nocheck
+
+interface JSONInterface {
+	parse: (string) => string
+}
+
 export default function initJSON() {
 	// Minified json2.js from https://github.com/douglascrockford/JSON-js
 	// This code is in the public domain.
@@ -143,7 +149,7 @@ export default function initJSON() {
 			return str("", { "": value })
 		},
 
-		parse: function (text, reviver) {
+		parse: function (text: string, reviver?) {
 			var j
 			function walk(holder, key) {
 				var k

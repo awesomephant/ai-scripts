@@ -67,6 +67,8 @@ import ProgressWindow from "../common/ProgressWindow"
 import formatCSSColor from "../common/formatCSSColor"
 import parseObjectName from "./parseObjectName"
 import cleanObjectName from "./cleanObjectName"
+import parseKeyValueString from "../common/parseKeyValueString"
+import parseDataAttributes from "./parseDataAttributes"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -473,27 +475,13 @@ function main() {
 		return fileExists(path) ? parseYaml(readTextFile(path)) : null
 	}
 
-	function parseKeyValueString(str, o) {
-		var dqRxp = /^"(?:[^"\\]|\\.)*"$/
-		var parts = str.split(":")
-		var k, v
-		if (parts.length > 1) {
-			k = trim(parts.shift())
-			v = trim(parts.join(":"))
-			if (dqRxp.test(v)) {
-				v = JSON.parse(v) // use JSON library to parse quoted strings
-			}
-			o[k] = v
-		}
-	}
-
 	// Very simple Yaml parsing. Does not implement nested properties, arrays and other features
 	function parseYaml(str) {
 		// TODO: strip comments // var comment = /\s*/
 		var o = {}
 		var lines = stringToLines(str)
 		for (var i = 0; i < lines.length; i++) {
-			parseKeyValueString(lines[i], o)
+			parseKeyValueString(lines[i], o, JSON)
 		}
 		return o
 	}
@@ -2162,19 +2150,6 @@ function main() {
 		return selected
 	}
 
-	// Extract key: value pairs from the contents of a note attribute
-	function parseDataAttributes(note) {
-		var o = {}
-		var parts
-		if (note) {
-			parts = note.split(/[\r\n;,]+/)
-			for (var i = 0; i < parts.length; i++) {
-				parseKeyValueString(parts[i], o)
-			}
-		}
-		return o
-	}
-
 	function formatCssPct(part, whole) {
 		return roundTo((part / whole) * 100, cssPrecision) + "%"
 	}
@@ -2270,7 +2245,7 @@ function main() {
 			? getUntransformedTextBounds(thisFrame)
 			: thisFrame.geometricBounds
 		var htmlBox = convertAiBounds(shiftBounds(aiBounds, -abBox.left, abBox.top))
-		var thisFrameAttributes = parseDataAttributes(thisFrame.note)
+		var thisFrameAttributes = parseDataAttributes(thisFrame.note, JSON)
 		// estimated space between top of HTML container and character glyphs
 		// (related to differences in AI and CSS vertical positioning of text blocks)
 		var marginTopPx =
