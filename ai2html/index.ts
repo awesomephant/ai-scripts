@@ -69,6 +69,7 @@ import parseObjectName from "./parseObjectName"
 import cleanObjectName from "./cleanObjectName"
 import parseKeyValueString from "../common/parseKeyValueString"
 import parseDataAttributes from "./parseDataAttributes"
+import uniqAssetName from "./uniqAssetName"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -1218,7 +1219,7 @@ function main() {
 	}
 
 	// return array of data records about each artboard, sorted from narrow to wide
-	function getSortedArtboardInfo(artboards, settings) {
+	function getSortedArtboardInfo(artboards, settings: ai2HTMLSettings) {
 		var arr = []
 		forEach(artboards, function (ab) {
 			arr.push({
@@ -2728,18 +2729,8 @@ function main() {
 		return getArtboardImageName(ab, settings) + "-" + getLayerName(lyr)
 	}
 
-	function getImageId(imgName) {
+	function getImageId(imgName: string) {
 		return nameSpace + imgName + "-img"
-	}
-
-	function uniqAssetName(name, names) {
-		var uniqName = name
-		var num = 2
-		while (contains(names, uniqName)) {
-			uniqName = name + "-" + num
-			num++
-		}
-		return uniqName
 	}
 
 	function getPromoImageFormat(ab: Artboard, settings: ai2HTMLSettings) {
