@@ -106,7 +106,7 @@ function addEnclosingTag(tagName: string, inner: string) {
 	return inner
 }
 
-function stripTag(tagName: string, str: string) {
+function stripTag(tagName: string, str: string): string {
 	var open = new RegExp("<" + tagName + "[^>]*>", "g")
 	var close = new RegExp("</" + tagName + ">", "g")
 	return str.replace(open, "").replace(close, "")
