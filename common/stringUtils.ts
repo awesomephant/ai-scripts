@@ -8,6 +8,13 @@ function trim(s: string): string {
 	return s.replace(/^[\s\uFEFF\xA0\x03]+|[\s\uFEFF\xA0\x03]+$/g, "")
 }
 
+/**
+ * Remove quotation marks at the beginning and end of a string
+ */
+function trimQuotationMarks(s: string): string {
+	return s.replace(/^("|')+|("|')+$/gm, "")
+}
+
 // splits a string into non-empty lines
 function stringToLines(str: string) {
 	var empty = /^\s*$/
@@ -130,6 +137,7 @@ function pathJoin(...args: string[]) {
 
 export {
 	trim,
+	trimQuotationMarks,
 	stringToLines,
 	zeroPad,
 	truncateString,

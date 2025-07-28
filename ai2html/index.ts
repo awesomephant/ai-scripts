@@ -75,6 +75,7 @@ import getSymbolClass from "./getSymbolClass"
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
+import parseSettingsEntries from "./parseSettingsEntries"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -718,7 +719,7 @@ function main() {
 					// set name of settings block, so it can be found later using getByName()
 					thisFrame.name = "ai2html-settings"
 				}
-				parseSettingsEntries(lines, settings)
+				settings = parseSettingsEntries(settings, lines, warn)
 			} else {
 				// import custom js, css and html blocks
 				code[type] = code[type] || []
@@ -892,40 +893,6 @@ function main() {
 		}
 		docIsSaved = false // doc has changed, need to save
 		block.contents = lines.join("\n")
-	}
-
-	function parseSettingsEntry(str) {
-		var entryRxp = /^([\w-]+)\s*:\s*(.*)$/
-		var match = entryRxp.exec(trim(str))
-		if (!match) return null
-		return [match[1], straightenCurlyQuotesInsideAngleBrackets(match[2])]
-	}
-
-	// Add ai2html settings from a text block to a settings object
-	function parseSettingsEntries(entries, settings) {
-		forEach(entries, function (str) {
-			var match = parseSettingsEntry(str)
-			var key, value
-			if (!match) {
-				if (str) warn("Malformed setting, skipping: " + str)
-				return
-			}
-			key = match[0]
-			value = match[1]
-			if (key == "output") {
-				// replace values from old versions of script with current values
-				if (value == "one-file-for-all-artboards" || value == "preview-one-file") {
-					value = "one-file"
-				}
-				if (value == "one-file-per-artboard" || value == "preview-multiple-files") {
-					value = "multiple-files"
-				}
-			}
-			if (key == "image_format") {
-				value = parseAsArray(value)
-			}
-			settings[key] = value
-		})
 	}
 
 	// Show alert or prompt; return true if promo image should be generated
