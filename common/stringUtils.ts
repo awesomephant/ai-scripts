@@ -101,6 +101,12 @@ function parseAsArray(str: string) {
 	return str.length === 0 ? [] : str.split(",")
 }
 
+// TODO (max) rename
+function stripSettingsFileComments(s: string) {
+	var rxp = /\/\/.*\n/g
+	return s.replace(rxp, "")
+}
+
 // Similar to Node.js path.join()
 function pathJoin(...args: string[]) {
 	var path = ""
@@ -136,5 +142,6 @@ export {
 	addEnclosingTag,
 	stripTag,
 	parseAsArray,
-	pathJoin
+	pathJoin,
+	stripSettingsFileComments
 }

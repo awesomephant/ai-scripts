@@ -57,7 +57,8 @@ import {
 	truncateString,
 	zeroPad,
 	pathJoin,
-	parseAsArray
+	parseAsArray,
+	stripSettingsFileComments
 } from "../common/stringUtils"
 import { isTrue, isFalse } from "../common/booleanUtils"
 import ProgressWindow from "../common/ProgressWindow"
@@ -796,16 +797,11 @@ function main() {
 	// Looks for settings file in the ai2html script directory and/or the .ai document directory
 	function readConfigFileSettings() {
 		var settingsFile = "ai2html-config.json"
-		var globalPath = pathJoin(getScriptDirectory(), settingsFile)
+		var globalPath = pathJoin(getScriptDirectory().toString(), settingsFile)
 		var localPath = pathJoin(docPath, settingsFile)
 		var globalSettings = fileExists(globalPath) ? readSettingsFile(globalPath) : {}
 		var localSettings = fileExists(localPath) ? readSettingsFile(localPath) : {}
 		return extend({}, globalSettings, localSettings)
-	}
-
-	function stripSettingsFileComments(str) {
-		var rxp = /\/\/.*/g
-		return str.replace(rxp, "")
 	}
 
 	// Expects that @path points to a text file containing a JavaScript object
