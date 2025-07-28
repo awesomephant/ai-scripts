@@ -99,9 +99,7 @@ exports[`works 1`] = `
 						return bounds.top < window.innerHeight && bounds.bottom > 0;
 				}
 				function selectChildren(selector, parent) {
-						return parent
-								? Array.prototype.slice.call(parent.querySelectorAll(selector))
-								: [];
+						return parent ? Array.prototype.slice.call(parent.querySelectorAll(selector)) : [];
 				}
 				// based on underscore.js
 				function throttle(func, wait) {

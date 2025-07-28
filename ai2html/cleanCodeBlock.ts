@@ -17,20 +17,14 @@ import { SettingsTextBlockMode } from "./types"
  * @param raw
  * @returns
  */
-export default function cleanCodeBlock(
-	mode: SettingsTextBlockMode,
-	raw: string
-) {
-	var clean = ""
+export default function cleanCodeBlock(mode: SettingsTextBlockMode, raw: string) {
 	if (mode.indexOf("html") >= 0) {
-		clean = cleanHtmlText(straightenCurlyQuotesInsideAngleBrackets(raw))
-	} else if (mode == "js") {
+		return cleanHtmlText(straightenCurlyQuotesInsideAngleBrackets(raw))
+	} else if (mode === "js") {
 		// TODO: consider preserving curly quotes inside quoted strings
-		clean = straightenCurlyQuotes(raw)
-		clean = addEnclosingTag("script", clean)
-	} else if (mode == "css") {
-		clean = straightenCurlyQuotes(raw)
-		clean = stripTag("style", clean)
+		return addEnclosingTag("script", straightenCurlyQuotes(raw))
+	} else if (mode === "css") {
+		return stripTag("style", straightenCurlyQuotes(raw))
 	}
-	return clean
+	return raw
 }

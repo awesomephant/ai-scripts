@@ -12,10 +12,7 @@ interface ResizerOptions {
  * @returns string
  */
 
-export default function makeResizerScript(
-	containerId: string,
-	namespace: string
-) {
+export default function makeResizerScript(containerId: string, namespace: string) {
 	// The resizer function is embedded in the HTML page -- external variables must
 	// be passed in.
 	//
@@ -50,10 +47,7 @@ export default function makeResizerScript(
 			}
 
 			function update() {
-				var artboards = selectChildren(
-						"." + ns + "artboard[data-min-width]",
-						container
-					),
+				var artboards = selectChildren("." + ns + "artboard[data-min-width]", container),
 					width = Math.round(container.getBoundingClientRect().width)
 
 				// Set artboard visibility based on container width
@@ -105,9 +99,7 @@ export default function makeResizerScript(
 
 		function findContainers(id) {
 			// support duplicate ids on the page
-			return selectChildren(".ai2html-responsive", document).filter(function (
-				el
-			) {
+			return selectChildren(".ai2html-responsive", document).filter(function (el) {
 				if (el.getAttribute("id") != id) return false
 				if (el.classList.contains("ai2html-resizer")) return false
 				el.classList.add("ai2html-resizer")
@@ -136,9 +128,7 @@ export default function makeResizerScript(
 		}
 
 		function selectChildren(selector, parent) {
-			return parent
-				? Array.prototype.slice.call(parent.querySelectorAll(selector))
-				: []
+			return parent ? Array.prototype.slice.call(parent.querySelectorAll(selector)) : []
 		}
 
 		// based on underscore.js
@@ -163,9 +153,7 @@ export default function makeResizerScript(
 	}
 
 	var optStr =
-		'{namespace: "' +
-		namespace +
-		'", setup: window.setupInteractive || window.getComponent}'
+		'{namespace: "' + namespace + '", setup: window.setupInteractive || window.getComponent}'
 
 	// convert resizer function to JS source code
 	var resizerJs =

@@ -14,6 +14,7 @@
 	},
 	"scripts": {
 		"dev": "rollup -w -c",
-		"test": "jest"
+		"test": "jest",
+		"coverage": "jest --coverage"
 	}
 }
