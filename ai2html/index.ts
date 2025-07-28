@@ -68,7 +68,8 @@ import parseDataAttributes from "./parseDataAttributes"
 import uniqAssetName from "./uniqAssetName"
 import compareVersions from "../common/compareVersions"
 import { formatCssRule, formatCssColor } from "../common/CssUtils"
-import { findHtmlTag, cleanHtmlTags } from "../common/HtmlUtils"
+import { findHtmlTag, cleanHtmlTags, injectCSSinSVG } from "../common/HtmlUtils"
+import getSymbolClass from "./getSymbolClass"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -2278,10 +2279,6 @@ function main() {
 		return 'style="' + styles.join("; ") + ';"'
 	}
 
-	function getSymbolClass() {
-		return nameSpace + "aiSymbol"
-	}
-
 	function exportSymbolAsHtml(item, geometries, abBox, opts) {
 		var html = ""
 		var style = getBasicSymbolStyle(item)
@@ -2296,7 +2293,7 @@ function main() {
 			html +=
 				"\r\t\t\t" +
 				'<div class="' +
-				getSymbolClass() +
+				getSymbolClass(nameSpace) +
 				'" ' +
 				properties +
 				getBasicSymbolCss(geom, style, abBox, opts) +
@@ -3329,13 +3326,6 @@ function main() {
 		return content
 	}
 
-	// Note: stopped wrapping CSS in CDATA tags (caused problems with NYT cms)
-	// TODO: check for XML reserved chars
-	function injectCSSinSVG(content, css) {
-		var style = "<style>\n" + css + "\n</style>"
-		return content.replace("</svg>", style + "\n</svg>")
-	}
-
 	// ===================================
 	// ai2html output generation functions
 	// ===================================
@@ -3490,7 +3480,7 @@ function main() {
 			width: "100% !important"
 		})
 
-		css += formatCssRule(blockStart + " ." + getSymbolClass(), {
+		css += formatCssRule(blockStart + " ." + getSymbolClass(nameSpace), {
 			position: "absolute",
 			"box-sizing": "border-box"
 		})

@@ -46,6 +46,7 @@ export interface ai2HTMLSettings {
 	image_output_path: string
 	image_source_path: string
 	image_alt_text: string
+	alt_text: string
 	cache_bust_token?: number
 	create_config_file: boolean
 	/**

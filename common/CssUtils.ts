@@ -1,6 +1,7 @@
 import roundTo from "./roundTo"
 import { isTrue } from "./booleanUtils"
 import { ai2HTMLSettings } from "../ai2html/types"
+import getSymbolClass from "../ai2html/getSymbolClass"
 
 function formatCssRule(selector: string, obj: Record<string, string | number>): string {
 	var css = selector + " {\r"
@@ -19,7 +20,8 @@ function formatCssColor(r: number, g: number, b: number, a?: number) {
 }
 
 // Get CSS styles that are common to all generated content
-function generatePageCss(containerId: string, group, settings: ai2HTMLSettings) {
+//@ts-ignore
+function generatePageCss(containerId: string, group, settings: ai2HTMLSettings, nameSpace: string) {
 	var css = ""
 	var blockStart = "#" + containerId
 
@@ -78,7 +80,7 @@ function generatePageCss(containerId: string, group, settings: ai2HTMLSettings) 
 		width: "100% !important"
 	})
 
-	css += formatCssRule(blockStart + " ." + getSymbolClass(), {
+	css += formatCssRule(blockStart + " ." + getSymbolClass(nameSpace), {
 		position: "absolute",
 		"box-sizing": "border-box"
 	})
