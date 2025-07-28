@@ -1,9 +1,8 @@
 import roundTo from "./roundTo"
+import { isTrue } from "./booleanUtils"
+import { ai2HTMLSettings } from "../ai2html/types"
 
-function formatCssRule(
-	selector: string,
-	obj: Record<string, string | number>
-): string {
+function formatCssRule(selector: string, obj: Record<string, string | number>): string {
 	var css = selector + " {\r"
 	for (var k in obj) {
 		css += "\t" + k + ":" + obj[k] + ";\r"
@@ -19,4 +18,75 @@ function formatCssColor(r: number, g: number, b: number, a?: number) {
 	return `rgb(${[r, g, b].join(",")})`
 }
 
-export { formatCssColor, formatCssRule }
+// Get CSS styles that are common to all generated content
+function generatePageCss(containerId: string, group, settings: ai2HTMLSettings) {
+	var css = ""
+	var blockStart = "#" + containerId
+
+	if (isTrue(settings.include_resizer_css) && group.artboards.length > 1) {
+		css += formatCssRule(blockStart, {
+			"container-type": "inline-size",
+			"container-name": containerId
+		})
+	}
+
+	if (settings.max_width) {
+		css += formatCssRule(blockStart, {
+			"max-width": settings.max_width + "px"
+		})
+	}
+
+	if (isTrue(settings.center_html_output)) {
+		css += formatCssRule(blockStart + ",\r" + blockStart + " ." + nameSpace + "artboard", {
+			margin: "0 auto"
+		})
+	}
+
+	if (settings.alt_text) {
+		css += formatCssRule(blockStart + " ." + nameSpace + "aiAltText", {
+			position: "absolute",
+			left: "-10000px",
+			width: "1px",
+			height: "1px",
+			overflow: "hidden",
+			"white-space": "nowrap"
+		})
+	}
+
+	if (settings.clickable_link !== "") {
+		css += formatCssRule(blockStart + " ." + nameSpace + "ai2htmlLink", {
+			display: "block"
+		})
+	}
+
+	// default <p> styles
+	css += formatCssRule(blockStart + " p", { margin: "0" })
+	if (isTrue(settings.testing_mode)) {
+		css += formatCssRule(blockStart + " p", {
+			color: "rgba(209, 0, 0, 0.5) !important"
+		})
+	}
+
+	css += formatCssRule(blockStart + " ." + nameSpace + "aiAbs", {
+		position: "absolute"
+	})
+
+	css += formatCssRule(blockStart + " ." + nameSpace + "aiImg", {
+		position: "absolute",
+		top: "0",
+		display: "block",
+		width: "100% !important"
+	})
+
+	css += formatCssRule(blockStart + " ." + getSymbolClass(), {
+		position: "absolute",
+		"box-sizing": "border-box"
+	})
+
+	css += formatCssRule(blockStart + " ." + nameSpace + "aiPointText p", {
+		"white-space": "nowrap"
+	})
+	return css
+}
+
+export { formatCssColor, formatCssRule, generatePageCss }

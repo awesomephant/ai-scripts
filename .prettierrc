@@ -2,5 +2,6 @@
 	"useTabs": true,
 	"trailingComma": "none",
 	"endOfLine": "crlf",
-	"semi": false
+	"semi": false,
+	"printWidth": 100
 }

@@ -1,8 +1,5 @@
-import { filter } from "./arrayUtils"
-import {
-	extraCharacterReplacements,
-	basicCharacterReplacements
-} from "./constants"
+import { filter, forEach } from "./arrayUtils"
+import { extraCharacterReplacements, basicCharacterReplacements } from "./constants"
 
 /**
  * Remove whitespace from beginning and end of a string
@@ -41,10 +38,7 @@ function makeKeyword(text: string): string {
 
 // TODO: don't convert ampersand in pre-existing entities (e.g. "&quot;" -> "&amp;quot;")
 function encodeHtmlEntities(text: string) {
-	return replaceChars(text, [
-		...basicCharacterReplacements,
-		...extraCharacterReplacements
-	])
+	return replaceChars(text, [...basicCharacterReplacements, ...extraCharacterReplacements])
 }
 
 function cleanHtmlText(text: string) {
@@ -80,16 +74,6 @@ function straightenCurlyQuotes(str: string): string {
 	return str.replace(/[\u201C\u201D]/g, '"').replace(/[‘’]/g, "'")
 }
 
-// Not very robust -- good enough for printing a warning
-function findHtmlTag(str: string) {
-	var match
-	if (str.indexOf("<") > -1) {
-		// bypass regex check
-		match = /<(\w+)[^>]*>/.exec(str)
-	}
-	return match ? match[1] : null
-}
-
 // Note: This used to inject \r newlines for formatting (?)
 // which makes tests fail on Windows so I'm dropping it.
 // Either way I'd rather have a separate formatHtml() function
@@ -116,6 +100,28 @@ function parseAsArray(str: string) {
 	str = trim(str).replace(/[\s,]+/g, ",")
 	return str.length === 0 ? [] : str.split(",")
 }
+
+// Similar to Node.js path.join()
+function pathJoin(...args: string[]) {
+	var path = ""
+	forEach(args, function (arg, i) {
+		if (!arg) return
+		arg = String(arg)
+		// Drop leading slash, except on the first argument  because that's
+		// necessary to differentiate different volumes on Windows
+		if (i > 0) {
+			arg = arg.replace(/^\/+/, "")
+		}
+		arg = arg.replace(/\/+$/, "")
+
+		if (path.length > 0) {
+			path += "/"
+		}
+		path += arg
+	})
+	return path
+}
+
 export {
 	trim,
 	stringToLines,
@@ -127,8 +133,8 @@ export {
 	replaceChars,
 	straightenCurlyQuotesInsideAngleBrackets,
 	straightenCurlyQuotes,
-	findHtmlTag,
 	addEnclosingTag,
 	stripTag,
-	parseAsArray
+	parseAsArray,
+	pathJoin
 }

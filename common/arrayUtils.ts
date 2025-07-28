@@ -4,8 +4,8 @@ function forEach(arr: any[], cb: (element: any, index: number) => any) {
 	}
 }
 
-function map(arr: any[], cb: (element: any, index: number) => any[]) {
-	var arr2 = []
+function map(arr: any[], cb: (element: any, index: number) => any): any[] {
+	let arr2 = []
 	for (var i = 0, n = arr.length; i < n; i++) {
 		arr2.push(cb(arr[i], i))
 	}

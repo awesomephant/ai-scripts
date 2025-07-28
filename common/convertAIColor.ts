@@ -1,6 +1,6 @@
 // color: a color object, e.g. RGBColor
 // opacity (optional): opacity [0-100]
-function convertAiColor(color: RGBColor, opacity: number) {
+export default function convertAiColor(color: Color, opacity: number) {
 	// If all three RBG channels (0-255) are below this value, convert text fill to pure black.
 	var rgbBlackThreshold = 36
 	var o = {}

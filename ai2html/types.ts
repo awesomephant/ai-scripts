@@ -9,6 +9,11 @@ export interface FontRule {
 	style: string
 }
 
+export interface ArtboardGroupForOutput {
+	groupName: string
+	artboards: Artboard[]
+}
+
 export type SettingsTextBlockMode =
 	| "css"
 	| "js"
@@ -56,7 +61,7 @@ export interface ai2HTMLSettings {
 	use_2x_images_if_possible: boolean
 	use_lazy_loader: boolean
 	include_resizer_widths: boolean
-	fonts?: fontRule[]
+	fonts?: FontRule[]
 	/**
 	 * container-query resizing
 	 */
@@ -94,4 +99,11 @@ export interface ai2HTMLSettings {
 	 */
 	settings_block: (keyof ai2HTMLSettings)[]
 	config_file: (keyof ai2HTMLSettings)[]
+
+	/**
+	 * NYT-specific
+	 */
+	project_type: string
+	dark_mode_compatible: boolean
+	show_in_compatible_apps: boolean
 }

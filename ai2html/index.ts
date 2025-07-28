@@ -47,7 +47,6 @@ import {
 	addEnclosingTag,
 	cleanHtmlText,
 	encodeHtmlEntities,
-	findHtmlTag,
 	makeKeyword,
 	replaceChars,
 	straightenCurlyQuotes,
@@ -57,6 +56,7 @@ import {
 	trim,
 	truncateString,
 	zeroPad,
+	pathJoin,
 	parseAsArray
 } from "../common/stringUtils"
 import { isTrue, isFalse } from "../common/booleanUtils"
@@ -66,7 +66,9 @@ import cleanObjectName from "./cleanObjectName"
 import parseKeyValueString from "../common/parseKeyValueString"
 import parseDataAttributes from "./parseDataAttributes"
 import uniqAssetName from "./uniqAssetName"
+import compareVersions from "../common/compareVersions"
 import { formatCssRule, formatCssColor } from "../common/CssUtils"
+import { findHtmlTag, cleanHtmlTags } from "../common/HtmlUtils"
 
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
@@ -98,7 +100,7 @@ function main() {
 	var feedback: string[] = []
 	var warnings: string[] = []
 	var errors: string[] = []
-	var oneTimeWarnings = []
+	var oneTimeWarnings: string[] = []
 	var startTime = +new Date()
 
 	var textFramesToUnhide = []
@@ -192,14 +194,9 @@ function main() {
 	if (errors.length > 0) {
 		showCompletionAlert()
 	} else if (isTrue(docSettings.show_completion_dialog_box)) {
-		message(
-			"Script ran in",
-			((+new Date() - startTime) / 1000).toFixed(2),
-			"seconds"
-		)
+		message("Script ran in", ((+new Date() - startTime) / 1000).toFixed(2), "seconds")
 		var promptForPromo =
-			isTrue(docSettings.write_image_files) &&
-			isTrue(docSettings.create_promo_image)
+			isTrue(docSettings.write_image_files) && isTrue(docSettings.create_promo_image)
 		var showPromo = showCompletionAlert(promptForPromo)
 		if (showPromo) createPromoImage(docSettings)
 	}
@@ -298,17 +295,12 @@ function main() {
 
 			if (specialData) {
 				imageData.html =
-					specialData.video +
-					specialData.html_before +
-					imageData.html +
-					specialData.html_after
+					specialData.video + specialData.html_before + imageData.html + specialData.html_after
 				forEach(specialData.layers, function (lyr) {
 					lyr.visible = true
 				})
 				if (specialData.video && !isTrue(settings.png_transparent)) {
-					warn(
-						"Background videos may be covered up without png_transparent:true"
-					)
+					warn("Background videos may be covered up without png_transparent:true")
 				}
 			}
 
@@ -334,12 +326,7 @@ function main() {
 				abStyles.push("> div { pointer-events: none; }\r")
 				abStyles.push("> img { pointer-events: none; }\r")
 			}
-			output.css += generateArtboardCss(
-				activeArtboard,
-				group,
-				abStyles,
-				settings
-			)
+			output.css += generateArtboardCss(activeArtboard, group, abStyles, settings)
 		}) // end artboard loop
 
 		//=====================================
@@ -384,10 +371,7 @@ function main() {
 	// Apply very basic string substitution to a template
 	function applyTemplate(template, replacements) {
 		var keyExp = "([_a-zA-Z][\\w-]*)"
-		var mustachePattern = new RegExp(
-			"\\{\\{\\{? *" + keyExp + " *\\}\\}\\}?",
-			"g"
-		)
+		var mustachePattern = new RegExp("\\{\\{\\{? *" + keyExp + " *\\}\\}\\}?", "g")
 		var ejsPattern = new RegExp("<%=? *" + keyExp + " *%>", "g")
 		var replace = function (match, name) {
 			var lcname = name.toLowerCase()
@@ -395,30 +379,7 @@ function main() {
 			if (lcname in replacements) return replacements[lcname]
 			return match
 		}
-		return template
-			.replace(mustachePattern, replace)
-			.replace(ejsPattern, replace)
-	}
-
-	// Similar to Node.js path.join()
-	function pathJoin() {
-		var path = ""
-		forEach(arguments, function (arg, i) {
-			if (!arg) return
-			arg = String(arg)
-			// Drop leading slash, except on the first argument
-			// because that's necessary to differentiate
-			// different volumes on Windows
-			if (i > 0) {
-				arg.replace(/^\/+/, "")
-			}
-			arg = arg.replace(/\/+$/, "")
-			if (path.length > 0) {
-				path += "/"
-			}
-			path += arg
-		})
-		return path
+		return template.replace(mustachePattern, replace).replace(ejsPattern, replace)
 	}
 
 	// Split a full path into directory and filename parts
@@ -492,13 +453,7 @@ function main() {
 			file.close()
 			// (on macos) 'file.length' triggers a file operation that returns -1 if unable to access file
 			if (!content && (file.length > 0 || file.length == -1)) {
-				warn(
-					"Unable to read from " +
-						file.fsName +
-						" (reported size: " +
-						file.length +
-						" bytes)"
-				)
+				warn("Unable to read from " + file.fsName + " (reported size: " + file.length + " bytes)")
 			}
 		} else {
 			warn(fpath + " could not be found.")
@@ -542,15 +497,9 @@ function main() {
 		if (!outputFolder.exists) {
 			var outputFolderCreated = outputFolder.create()
 			if (outputFolderCreated) {
-				message(
-					"The " +
-						nickname +
-						" folder did not exist, so the folder was created."
-				)
+				message("The " + nickname + " folder did not exist, so the folder was created.")
 			} else {
-				warn(
-					"The " + nickname + " folder did not exist and could not be created."
-				)
+				warn("The " + nickname + " folder did not exist and could not be created.")
 			}
 		}
 	}
@@ -619,7 +568,7 @@ function main() {
 	}
 
 	// id: optional identifier, for cases when the text for this type of warning may vary.
-	function warnOnce(msg, id) {
+	function warnOnce(msg: string, id?: string) {
 		id = id || msg
 		if (!contains(oneTimeWarnings, id)) {
 			warn(msg)
@@ -651,10 +600,7 @@ function main() {
 		// optimization: Layers containing hundreds or thousands of paths are unlikely
 		//    to contain a clipping mask and are slow to scan -- skip these
 		pathCount = o.pathItems.length
-		if (
-			(type == "Layer" && pathCount < 500) ||
-			(type == "GroupItem" && o.clipped)
-		) {
+		if ((type == "Layer" && pathCount < 500) || (type == "GroupItem" && o.clipped)) {
 			for (i = 0; i < pathCount; i++) {
 				item = o.pathItems[i]
 				if (!item.hidden && item.clipping && item.locked) {
@@ -721,9 +667,7 @@ function main() {
 				// (used to prevent duplicate image names)
 				settings.grouped_artboards = true
 				if (settings.output == "one-file") {
-					warnOnce(
-						'Artboards should have unique names. "' + name + '" is duplicated.'
-					)
+					warnOnce('Artboards should have unique names. "' + name + '" is duplicated.')
 				} else {
 					warnOnce('Found a group of artboards named "' + name + '".')
 				}
@@ -833,25 +777,9 @@ function main() {
 
 	// Trigger errors and warnings for some common problems
 	function validateDocumentSettings(settings: ai2HTMLSettings) {
-		if (
-			!(
-				settings.responsiveness == "fixed" ||
-				settings.responsiveness == "dynamic"
-			)
-		) {
-			warn(
-				'Unsupported "responsiveness" setting: ' +
-					(settings.responsiveness || "[]")
-			)
+		if (!(settings.responsiveness == "fixed" || settings.responsiveness == "dynamic")) {
+			warn('Unsupported "responsiveness" setting: ' + (settings.responsiveness || "[]"))
 		}
-	}
-
-	// assumes three-part version, e.g. 1.5.0
-	function compareVersions(a, b) {
-		a = map(a.split("."), parseFloat)
-		b = map(b.split("."), parseFloat)
-		var diff = a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || 0
-		return (diff < 0 && -1) || (diff > 0 && 1) || 0
 	}
 
 	function extendSettings(settings, moreSettings) {
@@ -869,9 +797,7 @@ function main() {
 		var settingsFile = "ai2html-config.json"
 		var globalPath = pathJoin(getScriptDirectory(), settingsFile)
 		var localPath = pathJoin(docPath, settingsFile)
-		var globalSettings = fileExists(globalPath)
-			? readSettingsFile(globalPath)
-			: {}
+		var globalSettings = fileExists(globalPath) ? readSettingsFile(globalPath) : {}
 		var localSettings = fileExists(localPath) ? readSettingsFile(localPath) : {}
 		return extend({}, globalSettings, localSettings)
 	}
@@ -941,9 +867,7 @@ function main() {
 		textArea.textRange.characterAttributes.size = fontSize
 		textArea.contents = settingsLines.join("\n")
 		textArea.name = "ai2html-settings"
-		message(
-			"A settings text block was created to the left of all your artboards."
-		)
+		message("A settings text block was created to the left of all your artboards.")
 		return textArea
 	}
 
@@ -993,16 +917,10 @@ function main() {
 			value = match[1]
 			if (key == "output") {
 				// replace values from old versions of script with current values
-				if (
-					value == "one-file-for-all-artboards" ||
-					value == "preview-one-file"
-				) {
+				if (value == "one-file-for-all-artboards" || value == "preview-one-file") {
 					value = "one-file"
 				}
-				if (
-					value == "one-file-per-artboard" ||
-					value == "preview-multiple-files"
-				) {
+				if (value == "one-file-per-artboard" || value == "preview-multiple-files") {
 					value = "multiple-files"
 				}
 			}
@@ -1159,10 +1077,7 @@ function main() {
 			}
 			minWidth = Math.min(w, minWidth || Infinity)
 		})
-		return [
-			thisWidth == minWidth ? 0 : thisWidth,
-			!!nextWidth ? nextWidth - 1 : Infinity
-		]
+		return [thisWidth == minWidth ? 0 : thisWidth, !!nextWidth ? nextWidth - 1 : Infinity]
 	}
 
 	// Get range of widths that an ab can be sized
@@ -1509,8 +1424,7 @@ function main() {
 	function textIsRotated(textFrame) {
 		var m = textFrame.matrix
 		var angle
-		if (m.mValueA == 1 && m.mValueB === 0 && m.mValueC === 0 && m.mValueD == 1)
-			return false
+		if (m.mValueA == 1 && m.mValueB === 0 && m.mValueC === 0 && m.mValueD == 1) return false
 		angle = (Math.atan2(m.mValueB, m.mValueA) * 180) / Math.PI
 		// Treat text rotated by < 1 degree as unrotated.
 		// (It's common to accidentally rotate text and then try to unrotate manually).
@@ -1536,11 +1450,7 @@ function main() {
 			r = color.red
 			g = color.green
 			b = color.blue
-			if (
-				r < rgbBlackThreshold &&
-				g < rgbBlackThreshold &&
-				b < rgbBlackThreshold
-			) {
+			if (r < rgbBlackThreshold && g < rgbBlackThreshold && b < rgbBlackThreshold) {
 				r = g = b = 0
 			}
 		} else if (color.typename == "GrayColor") {
@@ -1554,10 +1464,7 @@ function main() {
 				'The text "%s" has no fill. Please fill it with an RGB color. It has been filled with green.'
 		} else {
 			r = g = b = 0
-			o.warning =
-				'The text "%s" has ' +
-				color.typename +
-				" fill. Please fill it with an RGB color."
+			o.warning = 'The text "%s" has ' + color.typename + " fill. Please fill it with an RGB color."
 		}
 		o.color = formatCssColor(r, g, b, opacity)
 		return o
@@ -1652,11 +1559,7 @@ function main() {
 		var rotated = textIsRotated(textFrame)
 		var data = []
 		var p, plen, d
-		for (
-			var k = 0, n = textFrame.paragraphs.length;
-			k < n && charsLeft > 0;
-			k++
-		) {
+		for (var k = 0, n = textFrame.paragraphs.length; k < n && charsLeft > 0; k++) {
 			// trailing newline in a text block adds one to paragraphs.length, but
 			// an error is thrown when such a pg is accessed. charsLeft test is a workaround.
 			p = textFrame.paragraphs[k]
@@ -1676,29 +1579,12 @@ function main() {
 				d.aiStyle.rotated = rotated
 				d.aiStyle.opacity = opacity
 				d.aiStyle.blendMode = blendMode
-				d.aiStyle.frameType =
-					textFrame.kind == TextType.POINTTEXT ? "point" : "area"
+				d.aiStyle.frameType = textFrame.kind == TextType.POINTTEXT ? "point" : "area"
 			}
 			data.push(d)
 			charsLeft -= plen + 1 // char count + newline
 		}
 		return data
-	}
-
-	function cleanHtmlTags(str: string) {
-		var tagName = findHtmlTag(str)
-		// only warn for certain tags
-		if (
-			tagName &&
-			contains("i,span,b,strong,em".split(","), tagName.toLowerCase())
-		) {
-			warnOnce(
-				"Found a <" +
-					tagName +
-					"> tag. Try using Illustrator formatting instead."
-			)
-		}
-		return tagName ? straightenCurlyQuotesInsideAngleBrackets(str) : str
 	}
 
 	function generateParagraphHtml(pData, baseStyle, pStyles, cStyles) {
@@ -1718,7 +1604,7 @@ function main() {
 		}
 		for (var j = 0; j < pData.ranges.length; j++) {
 			range = pData.ranges[j]
-			rangeHtml = cleanHtmlText(cleanHtmlTags(range.text))
+			rangeHtml = cleanHtmlText(cleanHtmlTags(range.text, warnOnce))
 			diff = objectDiff(range.cssStyle, pData.cssStyle)
 			if (diff) {
 				rangeHtml =
@@ -1737,9 +1623,7 @@ function main() {
 	function generateTextFrameHtml(paragraphs, baseStyle, pStyles, cStyles) {
 		var html = ""
 		for (var i = 0; i < paragraphs.length; i++) {
-			html +=
-				"\r\t\t\t" +
-				generateParagraphHtml(paragraphs[i], baseStyle, pStyles, cStyles)
+			html += "\r\t\t\t" + generateParagraphHtml(paragraphs[i], baseStyle, pStyles, cStyles)
 		}
 		return html
 	}
@@ -1834,20 +1718,12 @@ function main() {
 			}
 			pdata.cssStyle = analyzeTextStyle(pdata.aiStyle, pdata.text, pgStyles)
 			if (pdata.aiStyle.blendMode && !pdata.cssStyle["mix-blend-mode"]) {
-				warnOnce(
-					"Missing a rule for converting " +
-						pdata.aiStyle.blendMode +
-						" to CSS."
-				)
+				warnOnce("Missing a rule for converting " + pdata.aiStyle.blendMode + " to CSS.")
 			}
 		}
 
 		function convertRangeStyle(range) {
-			range.cssStyle = analyzeTextStyle(
-				range.aiStyle,
-				range.text,
-				currCharStyles
-			)
+			range.cssStyle = analyzeTextStyle(range.aiStyle, range.text, currCharStyles)
 			if (range.warning) {
 				warn(range.warning.replace("%s", truncateString(range.text, 35)))
 			}
@@ -1891,7 +1767,7 @@ function main() {
 	}
 
 	// Lookup an AI font name in the font table
-	function findFontInfo(aifont) {
+	function findFontInfo(aifont: string) {
 		var info = null
 		for (var k = 0; k < fonts.length; k++) {
 			if (aifont == fonts[k].aifont) {
@@ -1993,8 +1869,7 @@ function main() {
 			cssStyle["padding-bottom"] = aiStyle.spaceAfter + "px"
 		}
 		if ("tracking" in aiStyle) {
-			cssStyle["letter-spacing"] =
-				roundTo(aiStyle.tracking / 1000, cssPrecision) + "em"
+			cssStyle["letter-spacing"] = roundTo(aiStyle.tracking / 1000, cssPrecision) + "em"
 		}
 		if (aiStyle.superscript) {
 			fontSize = roundTo(fontSize * 0.7, 1)
@@ -2010,16 +1885,10 @@ function main() {
 		// kludge: text-align of rotated text is handled as a special case (see also getTextFrameCss())
 		if (aiStyle.rotated && aiStyle.frameType == "point") {
 			cssStyle["text-align"] = "center"
-		} else if (
-			aiStyle.justification &&
-			(tmp = getJustificationCss(aiStyle.justification))
-		) {
+		} else if (aiStyle.justification && (tmp = getJustificationCss(aiStyle.justification))) {
 			cssStyle["text-align"] = tmp
 		}
-		if (
-			aiStyle.capitalization &&
-			(tmp = getCapitalizationCss(aiStyle.capitalization))
-		) {
+		if (aiStyle.capitalization && (tmp = getCapitalizationCss(aiStyle.capitalization))) {
 			cssStyle["text-transform"] = tmp
 		}
 		if (aiStyle.color) {
@@ -2046,10 +1915,7 @@ function main() {
 		var good = true
 		if (!testBoundsIntersection(frame.visibleBounds, artboardRect)) {
 			good = false
-		} else if (
-			frame.kind != TextType.AREATEXT &&
-			frame.kind != TextType.POINTTEXT
-		) {
+		} else if (frame.kind != TextType.AREATEXT && frame.kind != TextType.POINTTEXT) {
 			good = false
 		} else if (objectIsHidden(frame)) {
 			good = false
@@ -2108,10 +1974,7 @@ function main() {
 	// Get array of TextFrames belonging to an artboard, excluding text that
 	// overlaps the artboard but is hidden by a clipping mask
 	function getTextFramesByArtboard(ab, masks, settings) {
-		var candidateFrames = findTextFramesToRender(
-			doc.textFrames,
-			ab.artboardRect
-		)
+		var candidateFrames = findTextFramesToRender(doc.textFrames, ab.artboardRect)
 		var excludedFrames = getClippedTextFramesByArtboard(ab, masks)
 		candidateFrames = arraySubtract(candidateFrames, excludedFrames)
 		if (settings.render_rotated_skewed_text_as == "image") {
@@ -2144,10 +2007,7 @@ function main() {
 	}
 
 	function getUntransformedTextBounds(textFrame) {
-		var copy = textFrame.duplicate(
-			textFrame.parent,
-			ElementPlacement.PLACEATEND
-		)
+		var copy = textFrame.duplicate(textFrame.parent, ElementPlacement.PLACEATEND)
 		var matrix = clearMatrixShift(textFrame.matrix)
 		copy.transform(app.invertMatrix(matrix))
 		var bnds = copy.geometricBounds
@@ -2230,18 +2090,14 @@ function main() {
 		var firstPgStyle = pgData[0].aiStyle
 		var lastPgStyle = pgData[pgData.length - 1].aiStyle
 		var isRotated = firstPgStyle.rotated
-		var aiBounds = isRotated
-			? getUntransformedTextBounds(thisFrame)
-			: thisFrame.geometricBounds
+		var aiBounds = isRotated ? getUntransformedTextBounds(thisFrame) : thisFrame.geometricBounds
 		var htmlBox = convertAiBounds(shiftBounds(aiBounds, -abBox.left, abBox.top))
 		var thisFrameAttributes = parseDataAttributes(thisFrame.note, JSON)
 		// estimated space between top of HTML container and character glyphs
 		// (related to differences in AI and CSS vertical positioning of text blocks)
-		var marginTopPx =
-			(firstPgStyle.leading - firstPgStyle.size) / 2 + firstPgStyle.spaceBefore
+		var marginTopPx = (firstPgStyle.leading - firstPgStyle.size) / 2 + firstPgStyle.spaceBefore
 		// estimated space between bottom of HTML container and character glyphs
-		var marginBottomPx =
-			(lastPgStyle.leading - lastPgStyle.size) / 2 + lastPgStyle.spaceAfter
+		var marginBottomPx = (lastPgStyle.leading - lastPgStyle.size) / 2 + lastPgStyle.spaceAfter
 		// var trackingPx = firstPgStyle.size * firstPgStyle.tracking / 1000;
 		var htmlL = htmlBox.left
 		var htmlT = Math.round(htmlBox.top - marginTopPx)
@@ -2288,29 +2144,20 @@ function main() {
 		}
 
 		if (v_align == "bottom") {
-			var bottomPx =
-				abBox.height - (htmlBox.top + htmlBox.height + marginBottomPx)
+			var bottomPx = abBox.height - (htmlBox.top + htmlBox.height + marginBottomPx)
 			styles += "bottom:" + formatCssPct(bottomPx, abBox.height) + ";"
 		} else if (v_align == "middle") {
 			// https://css-tricks.com/centering-in-the-unknown/
 			// TODO: consider: http://zerosixthree.se/vertical-align-anything-with-just-3-lines-of-css/
-			styles +=
-				"top:" +
-				formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height) +
-				";"
-			styles +=
-				"margin-top:-" + roundTo(marginTopPx + htmlBox.height / 2, 1) + "px;"
+			styles += "top:" + formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height) + ";"
+			styles += "margin-top:-" + roundTo(marginTopPx + htmlBox.height / 2, 1) + "px;"
 		} else {
 			styles += "top:" + formatCssPct(htmlT, abBox.height) + ";"
 		}
 		if (alignment == "right") {
-			styles +=
-				"right:" +
-				formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width) +
-				";"
+			styles += "right:" + formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width) + ";"
 		} else if (alignment == "center") {
-			styles +=
-				"left:" + formatCssPct(htmlL + htmlBox.width / 2, abBox.width) + ";"
+			styles += "left:" + formatCssPct(htmlL + htmlBox.width / 2, abBox.width) + ";"
 			// setting a negative left margin for horizontal placement of centered text
 			// using percent for area text (because area text width uses percent) and pixels for point text
 			if (thisFrame.kind == TextType.POINTTEXT) {
@@ -2322,8 +2169,7 @@ function main() {
 			styles += "left:" + formatCssPct(htmlL, abBox.width) + ";"
 		}
 
-		classes =
-			nameSpace + getLayerName(thisFrame.layer) + " " + nameSpace + "aiAbs"
+		classes = nameSpace + getLayerName(thisFrame.layer) + " " + nameSpace + "aiAbs"
 		if (thisFrame.kind == TextType.POINTTEXT) {
 			classes += " " + nameSpace + "aiPointText"
 			// using pixel width with point text, because pct width causes alignment problems -- see issue #63
@@ -2415,9 +2261,7 @@ function main() {
 			} else {
 				border = "border"
 			}
-			styles.push(
-				border + ": " + style.strokeWidth + "px solid " + style.stroke
-			)
+			styles.push(border + ": " + style.strokeWidth + "px solid " + style.stroke)
 		}
 		if (style.fill) {
 			styles.push("background-color: " + style.fill)
@@ -2441,9 +2285,7 @@ function main() {
 	function exportSymbolAsHtml(item, geometries, abBox, opts) {
 		var html = ""
 		var style = getBasicSymbolStyle(item)
-		var properties = item.name
-			? 'data-name="' + makeKeyword(item.name) + '" '
-			: ""
+		var properties = item.name ? 'data-name="' + makeKeyword(item.name) + '" ' : ""
 		var geom, x, y
 		for (var i = 0; i < geometries.length; i++) {
 			geom = geometries[i]
@@ -2484,17 +2326,13 @@ function main() {
 		}
 
 		function itemIsVisible(item) {
-			if (item.hidden || item.guides || item.typename == "GroupItem")
-				return false
+			if (item.hidden || item.guides || item.typename == "GroupItem") return false
 			return testBoundsIntersection(item.visibleBounds, ab.artboardRect)
 		}
 
 		function groupIsVisible(group: GroupItem): boolean {
 			if (group.hidden) return false
-			return (
-				some(group.pageItems, itemIsVisible) ||
-				some(group.groupItems, groupIsVisible)
-			)
+			return some(group.pageItems, itemIsVisible) || some(group.groupItems, groupIsVisible)
 		}
 	}
 
@@ -2530,8 +2368,7 @@ function main() {
 			// try to convert to circle or rectangle
 			// note: filled shapes aren't necessarily closed
 			if (item.typename != "PathItem") return
-			singleGeom =
-				getRectangleData(item.pathPoints) || getCircleData(item.pathPoints)
+			singleGeom = getRectangleData(item.pathPoints) || getCircleData(item.pathPoints)
 			if (singleGeom) {
 				geometries = [singleGeom]
 			} else if (opts.scaled && item.stroked && !item.closed) {
@@ -2658,12 +2495,7 @@ function main() {
 			xy = p.anchor
 			if (!pathPointIsCorner(p)) return null
 			// point must be a bbox corner
-			if (
-				xy[0] != bbox[0] &&
-				xy[0] != bbox[2] &&
-				xy[1] != bbox[1] &&
-				xy[1] != bbox[3]
-			) {
+			if (xy[0] != bbox[0] && xy[0] != bbox[2] && xy[1] != bbox[1] && xy[1] != bbox[3]) {
 				return null
 			}
 		}
@@ -2753,11 +2585,7 @@ function main() {
 	function artboardContainsVisibleRasterImage(ab: Artboard) {
 		function test(item) {
 			// Calling objectHasLayer() prevents a crash caused by opacity masks created from linked rasters.
-			return (
-				objectHasLayer(item) &&
-				objectOverlapsArtboard(item, ab) &&
-				!objectIsHidden(item)
-			)
+			return objectHasLayer(item) && objectOverlapsArtboard(item, ab) && !objectIsHidden(item)
 		}
 		// TODO: verify that placed items are rasters
 		return contains(doc.placedItems, test) || contains(doc.rasterItems, test)
@@ -2828,8 +2656,7 @@ function main() {
 	// Generate images and return HTML embed code
 	function convertArtItems(activeArtboard, textFrames, masks, settings) {
 		var imgName = getArtboardImageName(activeArtboard, settings)
-		var hideTextFrames =
-			!isTrue(settings.testing_mode) && settings.render_text_as != "image"
+		var hideTextFrames = !isTrue(settings.testing_mode) && settings.render_text_as != "image"
 		var textFrameCount = textFrames.length
 		var html = ""
 		var uniqNames = []
@@ -2867,18 +2694,8 @@ function main() {
 		})
 
 		forEach(findTaggedLayers("svg"), function (lyr) {
-			var uniqName = uniqAssetName(
-				getLayerImageName(lyr, activeArtboard, settings),
-				uniqNames
-			)
-			var layerHtml = exportImage(
-				uniqName,
-				"svg",
-				activeArtboard,
-				masks,
-				lyr,
-				settings
-			)
+			var uniqName = uniqAssetName(getLayerImageName(lyr, activeArtboard, settings), uniqNames)
+			var layerHtml = exportImage(uniqName, "svg", activeArtboard, masks, lyr, settings)
 			if (layerHtml) {
 				uniqNames.push(uniqName)
 				html += layerHtml
@@ -2956,9 +2773,7 @@ function main() {
 
 		// all images are now absolutely positioned
 		// (before, artboard images were position:static to set the artboard height)
-		var inlineSvg =
-			isTrue(settings.inline_svg) ||
-			(layer && parseObjectName(layer.name).inline)
+		var inlineSvg = isTrue(settings.inline_svg) || (layer && parseObjectName(layer.name).inline)
 		var svgInlineStyle, svgLayersArg
 		var created, html
 
@@ -2977,20 +2792,11 @@ function main() {
 			if (inlineSvg) {
 				html = generateInlineSvg(outputPath, imgClass, svgInlineStyle, settings)
 				if (layer) {
-					message(
-						"Generated inline SVG for layer [" + getLayerName(layer) + "]"
-					)
+					message("Generated inline SVG for layer [" + getLayerName(layer) + "]")
 				}
 			} else {
 				// generate link to external SVG file
-				html = generateImageHtml(
-					imgFile,
-					imgId,
-					imgClass,
-					svgInlineStyle,
-					ab,
-					settings
-				)
+				html = generateImageHtml(imgFile, imgId, imgClass, svgInlineStyle, ab, settings)
 				if (layer) {
 					message("Exported an SVG layer as " + outputPath.replace(/.*\//, ""))
 				}
@@ -3030,9 +2836,7 @@ function main() {
 		svg = svg.replace(idRxp, replaceId)
 		if (dupes.length > 0) {
 			msg = truncateString(dupes.sort().join(", "), 65, true)
-			warnOnce(
-				"Found duplicate SVG " + (dupes.length == 1 ? "id" : "ids") + ": " + msg
-			)
+			warnOnce("Found duplicate SVG " + (dupes.length == 1 ? "id" : "ids") + ": " + msg)
 		}
 		return svg
 
@@ -3109,17 +2913,11 @@ function main() {
 		// if (testEmptyArtboard(ab)) return '';
 
 		if (!formats.length) {
-			warnOnce(
-				"No images were created because no image formats were specified."
-			)
+			warnOnce("No images were created because no image formats were specified.")
 			return ""
 		}
 
-		if (
-			formats[0] != "auto" &&
-			formats[0] != "jpg" &&
-			artboardContainsVisibleRasterImage(ab)
-		) {
+		if (formats[0] != "auto" && formats[0] != "jpg" && artboardContainsVisibleRasterImage(ab)) {
 			warnOnce(
 				"An artboard contains a raster image -- consider exporting to jpg instead of " +
 					formats[0] +
@@ -3150,14 +2948,7 @@ function main() {
 		if (settings.cache_bust_token) {
 			src += "?v=" + settings.cache_bust_token
 		}
-		html =
-			'\t\t<img id="' +
-			imgId +
-			'" class="' +
-			imgClass +
-			'" alt="' +
-			imgAlt +
-			'"'
+		html = '\t\t<img id="' + imgId + '" class="' + imgClass + '" alt="' + imgAlt + '"'
 		if (imgStyle) {
 			html += ' style="' + imgStyle + '"'
 		}
@@ -3291,12 +3082,7 @@ function main() {
 	function makeTmpDocument(doc, ab) {
 		// create temp document (pretty slow -- ~1.5s)
 		var artboardBounds = ab.artboardRect
-		var doc2 = app.documents.add(
-			DocumentColorSpace.RGB,
-			doc.width,
-			doc.height,
-			1
-		)
+		var doc2 = app.documents.add(DocumentColorSpace.RGB, doc.width, doc.height, 1)
 		doc2.pageOrigin = doc.pageOrigin // not sure if needed
 		doc2.rulerOrigin = doc.rulerOrigin
 		// The following caused MRAP
@@ -3490,16 +3276,10 @@ function main() {
 		svg = reapplyEffectsInSVG(svg)
 		// prevent SVG strokes from scaling
 		// (add element id to selector to prevent inline SVG from affecting other SVG on the page)
-		selector = map(
-			"rect,circle,path,line,polyline,polygon".split(","),
-			function (name) {
-				return "#" + id + " " + name
-			}
-		).join(", ")
-		svg = injectCSSinSVG(
-			svg,
-			selector + " { vector-effect: non-scaling-stroke; }"
-		)
+		selector = map("rect,circle,path,line,polyline,polygon".split(","), function (name) {
+			return "#" + id + " " + name
+		}).join(", ")
+		svg = injectCSSinSVG(svg, selector + " { vector-effect: non-scaling-stroke; }")
 		// remove images from filesystem and SVG file
 		svg = removeImagesInSVG(svg, path)
 		saveTextFile(path, svg)
@@ -3538,18 +3318,13 @@ function main() {
 	function removeImagesInSVG(content, path) {
 		var dir = pathSplit(path)[0]
 		var count = 0
-		content = content.replace(
-			/<image[^<]+href="([^"]+)"[^<]+<\/image>/gm,
-			function (match, href) {
-				count++
-				deleteFile(pathJoin(dir, href))
-				return ""
-			}
-		)
+		content = content.replace(/<image[^<]+href="([^"]+)"[^<]+<\/image>/gm, function (match, href) {
+			count++
+			deleteFile(pathJoin(dir, href))
+			return ""
+		})
 		if (count > 0) {
-			warnOnce(
-				"This document contains images or effects that can't be exported to SVG."
-			)
+			warnOnce("This document contains images or effects that can't be exported to SVG.")
 		}
 		return content
 	}
@@ -3580,35 +3355,22 @@ function main() {
 		if (widthRange[0] == widthRange[1]) {
 			// fixed width
 			// inlineSpacerStyle += "width:" + abBox.width + "px; height:" + abBox.height + "px;";
-			inlineStyle +=
-				"width:" + abBox.width + "px; height:" + abBox.height + "px;"
+			inlineStyle += "width:" + abBox.width + "px; height:" + abBox.height + "px;"
 		} else {
 			// Set height of dynamic artboards using vertical padding as a %, to preserve aspect ratio.
-			inlineSpacerStyle =
-				"padding: 0 0 " + formatCssPct(abBox.height, abBox.width) + " 0;"
+			inlineSpacerStyle = "padding: 0 0 " + formatCssPct(abBox.height, abBox.width) + " 0;"
 			if (widthRange[0] > 0) {
 				inlineStyle += "min-width: " + widthRange[0] + "px;"
 			}
 			if (widthRange[1] < Infinity) {
 				inlineStyle += "max-width: " + widthRange[1] + "px;"
-				inlineStyle +=
-					"max-height: " + Math.round(widthRange[1] / aspectRatio) + "px"
+				inlineStyle += "max-height: " + Math.round(widthRange[1] / aspectRatio) + "px"
 			}
 		}
 
-		html +=
-			'\t<div id="' +
-			id +
-			'" class="' +
-			classname +
-			'" style="' +
-			inlineStyle +
-			'"'
+		html += '\t<div id="' + id + '" class="' + classname + '" style="' + inlineStyle + '"'
 		html += ' data-aspect-ratio="' + roundTo(aspectRatio, 3) + '"'
-		if (
-			isTrue(settings.include_resizer_widths) ||
-			isTrue(settings.include_resizer_script)
-		) {
+		if (isTrue(settings.include_resizer_widths) || isTrue(settings.include_resizer_script)) {
 			html += ' data-min-width="' + visibleRange[0] + '"'
 			if (visibleRange[1] < Infinity) {
 				html += ' data-max-width="' + visibleRange[1] + '"'
@@ -3662,12 +3424,7 @@ function main() {
 				query += " and (width < " + (visibleRange[1] + 1) + "px)"
 			}
 		}
-		css +=
-			"@container " +
-			getGroupContainerId(group.groupName) +
-			" " +
-			query +
-			" {\r"
+		css += "@container " + getGroupContainerId(group.groupName) + " " + query + " {\r"
 		css += formatCssRule(abId, { display: isSmallest ? "none" : "block" })
 		css += "}\r"
 		return css
@@ -3692,12 +3449,9 @@ function main() {
 		}
 
 		if (isTrue(settings.center_html_output)) {
-			css += formatCssRule(
-				blockStart + ",\r" + blockStart + " ." + nameSpace + "artboard",
-				{
-					margin: "0 auto"
-				}
-			)
+			css += formatCssRule(blockStart + ",\r" + blockStart + " ." + nameSpace + "artboard", {
+				margin: "0 auto"
+			})
 		}
 
 		if (settings.alt_text) {
@@ -3807,14 +3561,8 @@ function main() {
 	}
 
 	// Write an HTML page to a file for NYT Preview
-	function outputLocalPreviewPage(
-		textForFile,
-		localPreviewDestination,
-		settings
-	) {
-		var localPreviewTemplateText = readTextFile(
-			docPath + settings.local_preview_template
-		)
+	function outputLocalPreviewPage(textForFile, localPreviewDestination, settings) {
+		var localPreviewTemplateText = readTextFile(docPath + settings.local_preview_template)
 		settings.ai2htmlPartial = textForFile // TODO: don't modify global settings this way
 		var localPreviewHtml = applyTemplate(localPreviewTemplateText, settings)
 		saveTextFile(localPreviewDestination, localPreviewHtml)
@@ -3826,15 +3574,10 @@ function main() {
 		}
 		if (content["html-before"]) {
 			output.html +=
-				"<!-- Custom HTML -->\r" +
-				content["html-before"].join("\r") +
-				"\r" +
-				output.html +
-				"\r"
+				"<!-- Custom HTML -->\r" + content["html-before"].join("\r") + "\r" + output.html + "\r"
 		}
 		if (content["html-after"]) {
-			output.html +=
-				"\r<!-- Custom HTML -->\r" + content["html-after"].join("\r") + "\r"
+			output.html += "\r<!-- Custom HTML -->\r" + content["html-after"].join("\r") + "\r"
 		}
 		// deprecated
 		if (content.html) {
@@ -3891,19 +3634,11 @@ function main() {
 			commentBlock += "<!-- preview: " + settings.preview_slug + " -->\r"
 		}
 		if (settings.scoop_slug_from_config_yml) {
-			commentBlock +=
-				"<!-- scoop: " + settings.scoop_slug_from_config_yml + " -->\r"
+			commentBlock += "<!-- scoop: " + settings.scoop_slug_from_config_yml + " -->\r"
 		}
 
 		// HTML
-		html =
-			'<div id="' +
-			containerId +
-			'" class="' +
-			containerClasses +
-			'"' +
-			ariaAttrs +
-			">\r"
+		html = '<div id="' + containerId + '" class="' + containerClasses + '"' + ariaAttrs + ">\r"
 
 		if (settings.alt_text) {
 			html +=
@@ -3917,8 +3652,7 @@ function main() {
 		}
 		if (linkSrc) {
 			// optional link around content
-			html +=
-				'\t<a class="' + nameSpace + 'ai2htmlLink" href="' + linkSrc + '">\r'
+			html += '\t<a class="' + nameSpace + 'ai2htmlLink" href="' + linkSrc + '">\r'
 		}
 		html += content.html
 		if (linkSrc) {
@@ -3952,8 +3686,7 @@ function main() {
 		textForFile = applyTemplate(textForFile, settings)
 		htmlFileDestinationFolder = docPath + settings.html_output_path
 		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path")
-		htmlFileDestination =
-			htmlFileDestinationFolder + pageName + settings.html_output_extension
+		htmlFileDestination = htmlFileDestinationFolder + pageName + settings.html_output_extension
 
 		// write file
 		saveTextFile(htmlFileDestination, textForFile)
@@ -3961,8 +3694,7 @@ function main() {
 		// process local preview template if appropriate
 		if (settings.local_preview_template !== "") {
 			// TODO: may have missed a condition, need to compare with original version
-			var previewFileDestination =
-				htmlFileDestinationFolder + pageName + ".preview.html"
+			var previewFileDestination = htmlFileDestinationFolder + pageName + ".preview.html"
 			outputLocalPreviewPage(textForFile, previewFileDestination, settings)
 		}
 	}
