@@ -1,4 +1,4 @@
-import { parseYaml } from "../common/YamlUtils"
+import { parseYaml } from "../common/yamlUtils"
 import { join } from "path"
 import { readFileSync } from "fs"
 import initJSON from "../common/json2"
