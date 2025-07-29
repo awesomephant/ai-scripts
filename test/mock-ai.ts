@@ -4,7 +4,6 @@ const rgbColor = {
 	blue: 56,
 	typename: "RGBColor"
 }
-
 const spotColor = {
 	typename: "SpotColor",
 	tint: 100,

@@ -1,3 +1,8 @@
+- `readJSONFile()`
+  - renamed to `readJsonFile()`
+  - extracted (unused)
+- `readYamlConfigFile()`
+  - extracted (unused)
 - `convertAiColor()`
   - renamed to `aiColorToCss()`
   - refactored source

@@ -46,6 +46,7 @@ export default function aiColorToCss(color: Color, opacity: number = 100): aiCol
 	}
 	return {
 		color: formatCssColor(0, 0, 0, opacity),
-		warning: `The text "%s" has ${typeof color} fill. Please fill it with an RGB color.`
+		//@ts-expect-error
+		warning: `The text "%s" has ${color.typename} fill. Please fill it with an RGB color.`
 	}
 }

@@ -367,26 +367,6 @@ function main() {
 		return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
 	}
 
-	function readYamlConfigFile(path: string) {
-		return fileExists(path) ? parseYaml(readTextFile(path), JSON) : null
-	}
-
-	function readJSONFile(fpath: string) {
-		var content = readTextFile(fpath)
-		var json = null
-		if (!content) {
-			// removing for now to avoid double warnings
-			// warn('Unable to read contents of file: ' + fpath);
-			return {}
-		}
-		try {
-			json = JSON.parse(content)
-		} catch (e) {
-			error("Error parsing JSON from " + fpath + ": [" + e.message + "]")
-		}
-		return json
-	}
-
 	function checkForOutputFolder(folderPath: string, nickname: string) {
 		var outputFolder = new Folder(folderPath)
 		if (!outputFolder.exists) {

@@ -1,4 +1,5 @@
 import { forEach } from "./arrayUtils"
+import { parseYaml } from "./yamlUtils"
 
 function folderExists(path: string) {
 	return new Folder(path).exists
@@ -41,7 +42,7 @@ function readFile(fpath: string, onerror?: (err: string) => any, enc?: string) {
 	return content
 }
 
-function readTextFile(fpath: string) {
+function readTextFile(fpath: string): string {
 	// This function used to use File#eof and File#readln(), but
 	// that failed to read the last line when missing a final newline.
 	return readFile(fpath, () => {}, "UTF-8") || ""
@@ -54,6 +55,28 @@ function saveTextFile(dest: string, contents: string) {
 	fd.encoding = "UTF-8"
 	fd.writeln(contents)
 	fd.close()
+}
+
+function readJsonFile(fpath: string, JSON: any, onerror: (e: string) => any) {
+	var content = readTextFile(fpath)
+	var json = null
+	if (!content) {
+		// removing for now to avoid double warnings
+		// warn('Unable to read contents of file: ' + fpath);
+		return {}
+	}
+	try {
+		json = JSON.parse(content)
+	} catch (e: any) {
+		if (onerror) {
+			onerror("Error parsing JSON from " + fpath + ": [" + e.message + "]")
+		}
+	}
+	return json
+}
+
+function readYamlConfigFile(path: string, JSON: any): any | null {
+	return fileExists(path) ? parseYaml(readTextFile(path), JSON) : null
 }
 
 // Similar to Node.js path.join()
@@ -97,5 +120,7 @@ export {
 	readTextFile,
 	saveTextFile,
 	getScriptDirectory,
-	readFile
+	readFile,
+	readJsonFile,
+	readYamlConfigFile
 }
