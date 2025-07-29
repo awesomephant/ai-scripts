@@ -1,0 +1,5 @@
+- `convertAiColor()`
+  - renamed to `aiColorToCss()`
+  - refactored source
+  - added unit tests
+  - extracted `darkGrayToBlack()`

@@ -94,6 +94,7 @@ import {
 	shiftBounds
 } from "../common/geometryUtils"
 import getDateTimeStamp from "../common/getDateTimestamp"
+import aiColorToCss from "../common/aiColorToCss"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -1273,43 +1274,9 @@ function main() {
 		textFrame.hidden = true
 	}
 
-	// color: a color object, e.g. RGBColor
-	// opacity (optional): opacity [0-100]
-	function convertAiColor(color, opacity) {
-		// If all three RBG channels (0-255) are below this value, convert text fill to pure black.
-		var rgbBlackThreshold = 36
-		var o = {}
-		var r, g, b
-		if (color.typename == "SpotColor") {
-			color = color.spot.color // expecting AI to return an RGBColor because doc is in RGB mode.
-		}
-		if (color.typename == "RGBColor") {
-			r = color.red
-			g = color.green
-			b = color.blue
-			if (r < rgbBlackThreshold && g < rgbBlackThreshold && b < rgbBlackThreshold) {
-				r = g = b = 0
-			}
-		} else if (color.typename == "GrayColor") {
-			r = g = b = Math.round(((100 - color.gray) / 100) * 255)
-		} else if (color.typename == "NoColor") {
-			g = 255
-			r = b = 0
-			// warnings are processed later, after ranges of same-style chars are identified
-			// TODO: add text-fill-specific warnings elsewhere
-			o.warning =
-				'The text "%s" has no fill. Please fill it with an RGB color. It has been filled with green.'
-		} else {
-			r = g = b = 0
-			o.warning = 'The text "%s" has ' + color.typename + " fill. Please fill it with an RGB color."
-		}
-		o.color = formatCssColor(r, g, b, opacity)
-		return o
-	}
-
 	// Parse an AI CharacterAttributes object
 	function getCharStyle(c) {
-		var o = convertAiColor(c.fillColor)
+		var o = aiColorToCss(c.fillColor)
 		var caps = String(c.capitalization)
 		o.aifont = c.textFont.name
 		o.size = Math.round(c.size)
@@ -2029,11 +1996,11 @@ function main() {
 		if (path.stroked || path.filled) {
 			style += "padding: 6px 6px 6px 7px;"
 			if (path.filled) {
-				obj = convertAiColor(path.fillColor, path.opacity)
+				obj = aiColorToCss(path.fillColor, path.opacity)
 				style += "background-color: " + obj.color + ";"
 			}
 			if (path.stroked) {
-				obj = convertAiColor(path.strokeColor, path.opacity)
+				obj = aiColorToCss(path.strokeColor, path.opacity)
 				style += "border: 1px solid " + obj.color + ";"
 			}
 		}
@@ -2235,11 +2202,11 @@ function main() {
 			style.multiply = true
 		}
 		if (item.filled) {
-			fill = convertAiColor(item.fillColor)
+			fill = aiColorToCss(item.fillColor)
 			style.fill = fill.color
 		}
 		if (item.stroked) {
-			stroke = convertAiColor(item.strokeColor)
+			stroke = aiColorToCss(item.strokeColor)
 			style.stroke = stroke.color
 			// Chrome doesn't consistently render borders that are less than 1px, which
 			// can cause lines to disappear or flicker as the window is resized.
