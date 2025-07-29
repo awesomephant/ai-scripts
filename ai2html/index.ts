@@ -96,7 +96,7 @@ import {
 import getDateTimeStamp from "../common/getDateTimeStamp"
 import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
-import { getArtboardResponsiveness } from "./ArtboardUtils"
+import { forEachUsableArtboard, getArtboardResponsiveness } from "./ArtboardUtils"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -383,7 +383,7 @@ function main() {
 
 	function calcProgressBarSteps(): number {
 		var n = 0
-		forEachUsableArtboard(function () {
+		forEachUsableArtboard(doc, () => {
 			n += 2
 		})
 		return n
@@ -497,7 +497,7 @@ function main() {
 
 	function groupArtboardsForOutput(settings: ai2HTMLSettings) {
 		let groups = []
-		forEachUsableArtboard(function (ab: Artboard) {
+		forEachUsableArtboard(doc, (ab: Artboard) => {
 			var group, groupName
 			if (settings.output == "one-file") {
 				// single-file output: artboards share a single group
@@ -533,7 +533,7 @@ function main() {
 
 	function validateArtboardNames(settings: ai2HTMLSettings) {
 		let names: string[] = []
-		forEachUsableArtboard((ab: Artboard) => {
+		forEachUsableArtboard(doc, (ab: Artboard) => {
 			var name = getArtboardName(ab)
 			var isDupe = contains(names, name)
 			if (isDupe) {
@@ -919,21 +919,10 @@ function main() {
 
 	function findUsableArtboards() {
 		var arr = []
-		forEachUsableArtboard(function (ab) {
+		forEachUsableArtboard(doc, (ab) => {
 			arr.push(ab)
 		})
 		return arr
-	}
-
-	function forEachUsableArtboard(cb) {
-		var ab
-		for (var i = 0; i < doc.artboards.length; i++) {
-			ab = doc.artboards[i]
-			if (!/^-/.test(ab.name)) {
-				// exclude artboards with names starting w/ "-"
-				cb(ab, i)
-			}
-		}
 	}
 
 	function findArtboardIndex(ab: Artboard) {
@@ -944,7 +933,7 @@ function main() {
 	function findLargestArtboard() {
 		var largestId = -1
 		var largestArea = 0
-		forEachUsableArtboard(function (ab, i) {
+		forEachUsableArtboard(doc, (ab, i) => {
 			var info = aiBoundsToRect(ab.artboardRect)
 			var area = info.width * info.height
 			if (area > largestArea) {
@@ -1004,15 +993,15 @@ function main() {
 		app.executeMenuCommand("deselectall")
 	}
 
-	function objectOverlapsAnArtboard(obj) {
+	function objectOverlapsAnArtboard(obj: Object) {
 		var hit = false
-		forEachUsableArtboard(function (ab) {
+		forEachUsableArtboard(doc, (ab) => {
 			hit = hit || objectOverlapsArtboard(obj, ab)
 		})
 		return hit
 	}
 
-	function objectOverlapsArtboard(obj, ab) {
+	function objectOverlapsArtboard(obj: Object, ab: Artboard) {
 		return boundsIntersect(ab.artboardRect, obj.geometricBounds)
 	}
 

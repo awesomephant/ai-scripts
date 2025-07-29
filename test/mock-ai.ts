@@ -60,4 +60,18 @@ function mockAiToHtmlSettings(settings: Partial<ai2HTMLSettings>) {
 	} as ai2HTMLSettings
 }
 
-export { rgbColor, spotColor, grayColor, artboard, mockArtboard, mockAiToHtmlSettings }
+function mockDocument(document: Partial<Document>) {
+	return {
+		...document
+	} as Document
+}
+
+export {
+	rgbColor,
+	spotColor,
+	grayColor,
+	artboard,
+	mockArtboard,
+	mockAiToHtmlSettings,
+	mockDocument
+}
