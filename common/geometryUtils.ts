@@ -35,4 +35,15 @@ function boundsAreSimilar(a: Bounds, b: Bounds, maxOffs: number): boolean {
 	return true
 }
 
-export { aiBoundsToRect, boundsAreSimilar }
+/**
+ * Test if two bounding rects intersect
+ */
+function boundsIntersect(a: Bounds, b: Bounds): boolean {
+	return a[2] >= b[0] && b[2] >= a[0] && a[3] <= b[1] && b[3] <= a[1]
+}
+
+function shiftBounds(bnds: Bounds, dx: number, dy: number) {
+	return [bnds[0] + dx, bnds[1] + dy, bnds[2] + dx, bnds[3] + dy]
+}
+
+export { aiBoundsToRect, boundsAreSimilar, boundsIntersect, shiftBounds }

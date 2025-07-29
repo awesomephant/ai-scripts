@@ -87,7 +87,12 @@ import cleanCodeBlock from "./cleanCodeBlock"
 import parseSettingsEntries from "./parseSettingsEntries"
 import roundTo from "../common/roundTo"
 import applyTemplate from "../common/applyTemplate"
-import { aiBoundsToRect, boundsAreSimilar } from "../common/geometryUtils"
+import {
+	aiBoundsToRect,
+	boundsAreSimilar,
+	boundsIntersect,
+	shiftBounds
+} from "../common/geometryUtils"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -99,8 +104,8 @@ function main() {
 	// Rules for converting AI fonts to CSS
 	// vshift shifts text vertically, to compensate for vertical misalignment caused
 	// by a difference between vertical placement in Illustrator (of a system font) and
-	// browsers (of the web font equivalent). vshift values are percentage of font size. Positive
-	// values correspond to a downward shift.
+	// browsers (of the web font equivalent). vshift values are percentage of font size. //
+	// Positive values correspond to a downward shift.
 	const fonts: FontRule[] = [...defaultFonts]
 
 	const cssPrecision = 4
@@ -369,15 +374,6 @@ function main() {
 	// ======================================
 	// Illustrator specific utility functions
 	// ======================================
-
-	// a, b: coordinate arrays, as from <PathItem>.geometricBounds
-	function testBoundsIntersection(a, b) {
-		return a[2] >= b[0] && b[2] >= a[0] && a[3] <= b[1] && b[3] <= a[1]
-	}
-
-	function shiftBounds(bnds, dx, dy) {
-		return [bnds[0] + dx, bnds[1] + dy, bnds[2] + dx, bnds[3] + dy]
-	}
 
 	function clearMatrixShift(m) {
 		return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
@@ -1086,7 +1082,7 @@ function main() {
 	}
 
 	function objectOverlapsArtboard(obj, ab) {
-		return testBoundsIntersection(ab.artboardRect, obj.geometricBounds)
+		return boundsIntersect(ab.artboardRect, obj.geometricBounds)
 	}
 
 	function objectIsHidden(obj) {
@@ -1767,7 +1763,7 @@ function main() {
 
 	function textFrameIsRenderable(frame, artboardRect) {
 		var good = true
-		if (!testBoundsIntersection(frame.visibleBounds, artboardRect)) {
+		if (!boundsIntersect(frame.visibleBounds, artboardRect)) {
 			good = false
 		} else if (frame.kind != TextType.AREATEXT && frame.kind != TextType.POINTTEXT) {
 			good = false
@@ -1791,9 +1787,9 @@ function main() {
 		for (var i = 0, n = items.length; i < n; i++) {
 			itemRect = items[i].geometricBounds
 			// capture items that intersect the artboard but are masked...
-			itemInArtboard = testBoundsIntersection(abRect, itemRect)
-			maskInArtboard = testBoundsIntersection(abRect, clipRect)
-			itemInMask = testBoundsIntersection(itemRect, clipRect)
+			itemInArtboard = boundsIntersect(abRect, itemRect)
+			maskInArtboard = boundsIntersect(abRect, clipRect)
+			itemInMask = boundsIntersect(itemRect, clipRect)
 			if (itemInArtboard && (!maskInArtboard || !itemInMask)) {
 				found.push(items[i])
 			}
@@ -1812,7 +1808,7 @@ function main() {
 				// if clip path is masking the current artboard, skip the test
 				return
 			}
-			if (!testBoundsIntersection(abRect, clipRect)) {
+			if (!boundsIntersect(abRect, clipRect)) {
 				return // ignore masks in other artboards
 			}
 			var texts = o.textframes
@@ -2177,7 +2173,7 @@ function main() {
 
 		function itemIsVisible(item) {
 			if (item.hidden || item.guides || item.typename == "GroupItem") return false
-			return testBoundsIntersection(item.visibleBounds, ab.artboardRect)
+			return boundsIntersect(item.visibleBounds, ab.artboardRect)
 		}
 
 		function groupIsVisible(group: GroupItem): boolean {
@@ -2209,11 +2205,7 @@ function main() {
 
 		function forPageItem(item) {
 			var singleGeom, geometries
-			if (
-				item.hidden ||
-				item.guides ||
-				!testBoundsIntersection(item.visibleBounds, ab.artboardRect)
-			)
+			if (item.hidden || item.guides || !boundsIntersect(item.visibleBounds, ab.artboardRect))
 				return
 			// try to convert to circle or rectangle
 			// note: filled shapes aren't necessarily closed
@@ -2496,7 +2488,7 @@ function main() {
 		var text = ""
 		forEach(lyr.textFrames, eachFrame)
 		function eachFrame(frame) {
-			if (testBoundsIntersection(frame.visibleBounds, ab.artboardRect)) {
+			if (boundsIntersect(frame.visibleBounds, ab.artboardRect)) {
 				text = frame.contents
 			}
 		}
@@ -3018,7 +3010,7 @@ function main() {
 		function copyMaskedLayerAsGroup(lyr, mask) {
 			var maskBounds = mask.mask.geometricBounds
 			var newMask, newGroup
-			if (!testBoundsIntersection(artboardBounds, maskBounds)) {
+			if (!boundsIntersect(artboardBounds, maskBounds)) {
 				return
 			}
 			newGroup = doc.groupItems.add()
@@ -3072,7 +3064,7 @@ function main() {
 		function copyPageItem(item, dest) {
 			var excluded =
 				// item.typename == 'TextFrame' || // text objects should be copied if visible
-				!testBoundsIntersection(item.geometricBounds, artboardBounds) ||
+				!boundsIntersect(item.geometricBounds, artboardBounds) ||
 				objectIsHidden(item) ||
 				item.clipping
 			var copy
