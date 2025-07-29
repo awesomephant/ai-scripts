@@ -23,7 +23,7 @@ function stringToLines(str: string) {
 	})
 }
 
-function zeroPad(val: number, digits: number) {
+function zeroPad(val: number | string, digits: number) {
 	var str = String(val)
 	while (str.length < digits) str = "0" + str
 	return str

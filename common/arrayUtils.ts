@@ -23,7 +23,7 @@ function filter(arr: any[], test: (element: any, index: number) => boolean) {
 }
 
 // obj: value or test function
-type ArrayTest = ((element: any) => boolean) | string | number
+type ArrayTest = ((element: any) => boolean) | string | number | null
 
 function indexOf(arr: any[], obj: ArrayTest): number {
 	var test = typeof obj == "function" ? obj : null
