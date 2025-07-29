@@ -14,7 +14,7 @@ limitations under the License.*/
 
 /// <reference types="types-for-adobe/Illustrator/2022"/>
 
-// SR: Adobe Illustrator 2025 Scripting Reference: Javascript (https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
+// SR: https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
 
 import {
 	align,
@@ -96,6 +96,7 @@ import {
 import getDateTimeStamp from "../common/getDateTimeStamp"
 import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
+import { getArtboardResponsiveness } from "./ArtboardUtils"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -228,20 +229,16 @@ function main() {
 	// ai2html render function
 	// =================================
 
-	function renderDocument(settings, textBlockContent) {
-		// Fix for issue #50
-		// If a text range is selected when the script runs, it interferes
-		// with script-driven selection. The fix is to clear this kind of selection.
-		if (doc.selection && doc.selection.typename) {
-			clearSelection()
-		}
-		unlockObjects() // Unlock containers and clipping masks
-		var masks = findMasks() // identify all clipping masks and their contents
-		var groups = groupArtboardsForOutput(settings)
-		if (groups.length === 0) {
-			error("No usable artboards were found")
-		}
-		forEach(groups, function (group) {
+	function renderDocument(settings: ai2HTMLSettings, textBlockContent) {
+		clearSelection()
+		unlockObjects()
+
+		const masks = findMasks() // identify all clipping masks and their contents
+		const groups = groupArtboardsForOutput(settings)
+
+		if (groups.length === 0) error("No usable artboards were found")
+
+		forEach(groups, (group) => {
 			// TODO: consider if we want to add custom text block code to
 			// each output file. CSS and possibly JS could possibly be added to just one
 			// file.s=
@@ -275,7 +272,7 @@ function main() {
 
 		forEach(group.artboards, function (activeArtboard: Artboard) {
 			var abIndex = findArtboardIndex(activeArtboard)
-			var abSettings = getArtboardSettings(activeArtboard)
+			var abSettings = parseObjectName(activeArtboard.name)
 			var docArtboardName = getDocumentArtboardName(activeArtboard)
 			var textFrames, textData, imageData, specialData
 
@@ -452,6 +449,7 @@ function main() {
 		}
 	}
 
+	// Unlock containers and clipping masks
 	function unlockObjects() {
 		forEach(doc.layers, unlockContainer)
 	}
@@ -497,9 +495,9 @@ function main() {
 	// ai2html program state and settings
 	// ==================================
 
-	function groupArtboardsForOutput(settings) {
+	function groupArtboardsForOutput(settings: ai2HTMLSettings) {
 		let groups = []
-		forEachUsableArtboard(function (ab) {
+		forEachUsableArtboard(function (ab: Artboard) {
 			var group, groupName
 			if (settings.output == "one-file") {
 				// single-file output: artboards share a single group
@@ -533,9 +531,9 @@ function main() {
 		return groups
 	}
 
-	function validateArtboardNames(settings) {
-		var names = []
-		forEachUsableArtboard(function (ab) {
+	function validateArtboardNames(settings: ai2HTMLSettings) {
+		let names: string[] = []
+		forEachUsableArtboard((ab: Artboard) => {
 			var name = getArtboardName(ab)
 			var isDupe = contains(names, name)
 			if (isDupe) {
@@ -624,18 +622,18 @@ function main() {
 
 	// Derive ai2html program settings by merging default settings and overrides.
 	function initDocumentSettings(textBlockSettings: ai2HTMLSettings | null) {
-		var settings = { ...defaultSettings, scriptVersion } // copy default settings
+		let settings: ai2HTMLSettings = { ...defaultSettings, scriptVersion } // copy default settings
 
 		// merge config file settings into @settings
 		// TODO: handle inconsistent settings in text block and local config file
 		// (currently the text block settings override config file settings... but
-		//  this could result in default settings overriding custom settings)
+		// this could result in default settings overriding custom settings)
 		extendSettings(settings, readConfigFileSettings())
 
 		// merge settings from text block
 		// TODO: consider parsing strings to booleans when relevant, (e.g. "false" -> false)
 		if (textBlockSettings) {
-			for (var key in textBlockSettings) {
+			for (const key in textBlockSettings) {
 				if (!(key in settings)) {
 					warn("Settings block contains an unused parameter: " + key)
 				}
@@ -666,17 +664,17 @@ function main() {
 
 	// Looks for settings file in the ai2html script directory and/or the .ai document directory
 	function readConfigFileSettings() {
-		var settingsFile = "ai2html-config.json"
-		var globalPath = pathJoin(getScriptDirectory().toString(), settingsFile)
-		var localPath = pathJoin(docPath, settingsFile)
-		var globalSettings = fileExists(globalPath) ? readSettingsFile(globalPath) : {}
-		var localSettings = fileExists(localPath) ? readSettingsFile(localPath) : {}
+		const settingsFile = "ai2html-config.json"
+		const globalPath = pathJoin(getScriptDirectory().toString(), settingsFile)
+		const localPath = pathJoin(docPath, settingsFile)
+		const globalSettings = fileExists(globalPath) ? readSettingsFile(globalPath) : {}
+		const localSettings = fileExists(localPath) ? readSettingsFile(localPath) : {}
 		return extend({}, globalSettings, localSettings)
 	}
 
 	// Expects that @path points to a text file containing a JavaScript object
 	// with settings to override the default ai2html settings.
-	function readSettingsFile(path) {
+	function readSettingsFile(path: string) {
 		var o = {},
 			str
 		try {
@@ -826,10 +824,6 @@ function main() {
 		return cleanObjectName(layer.name)
 	}
 
-	function getDocumentSlug() {
-		return docSlug
-	}
-
 	function makeDocumentSlug(rawName: string) {
 		return makeKeyword(rawName.replace(/ +/g, "-"))
 	}
@@ -844,7 +838,7 @@ function main() {
 
 	// Prevent duplicate artboard names by appending width
 	// (Assumes dupes have different widths and have been named to form a group)
-	function getArtboardUniqueName(ab, settings) {
+	function getArtboardUniqueName(ab: Artboard, settings: ai2HTMLSettings) {
 		var suffix = ""
 		if (settings.grouped_artboards) {
 			suffix = "-" + Math.round(aiBoundsToRect(ab.artboardRect).width)
@@ -852,13 +846,13 @@ function main() {
 		return getDocumentArtboardName(ab) + suffix
 	}
 
-	function getDocumentArtboardName(ab) {
-		return getDocumentSlug() + "-" + getArtboardName(ab)
+	function getDocumentArtboardName(ab: Artboard) {
+		return docSlug + "-" + getArtboardName(ab)
 	}
 
 	// return the effective width of an artboard (the actual width, overridden by optional setting)
-	function getArtboardWidth(ab) {
-		var abSettings = getArtboardSettings(ab)
+	function getArtboardWidth(ab: Artboard) {
+		var abSettings = parseObjectName(ab.name)
 		return abSettings.width || aiBoundsToRect(ab.artboardRect).width
 	}
 
@@ -906,20 +900,6 @@ function main() {
 			max = maxAB.effectiveWidth
 		}
 		return [min, max]
-	}
-
-	// Get artboard-specific settings by parsing the artboard name
-	// (e.g.  Artboard_1:responsive)
-	function getArtboardSettings(ab: Artboard) {
-		return parseObjectName(ab.name)
-	}
-
-	function getArtboardResponsiveness(ab: Artboard, settings: ai2HTMLSettings) {
-		var opts = getArtboardSettings(ab)
-		var r = settings.responsiveness // Default to document's responsiveness setting
-		if (opts.dynamic) r = "dynamic" // ab name has ":dynamic" appended
-		if (opts.fixed) r = "fixed" // ab name has ":fixed" appended
-		return r
 	}
 
 	// return array of data records about each artboard, sorted from narrow to wide
@@ -1222,7 +1202,7 @@ function main() {
 	// ai2html text functions
 	// ==============================
 
-	function textIsRotated(textFrame) {
+	function textIsRotated(textFrame: TextFrame) {
 		var m = textFrame.matrix
 		var angle
 		if (m.mValueA == 1 && m.mValueB === 0 && m.mValueC === 0 && m.mValueD == 1) return false
@@ -1535,7 +1515,7 @@ function main() {
 
 	// Lookup an AI font name in the font table
 	function findFontInfo(aifont: string) {
-		var info = null
+		var info: FontRule = null
 		for (var k = 0; k < fonts.length; k++) {
 			if (aifont == fonts[k].aifont) {
 				info = fonts[k]
@@ -2740,12 +2720,12 @@ function main() {
 	}
 
 	// Create a promo image from the largest usable artboard
-	function createPromoImage(settings) {
+	function createPromoImage(settings: ai2HTMLSettings) {
 		var abIndex = findLargestArtboard()
 		if (abIndex == -1) return // TODO: show error
 		var ab = doc.artboards[abIndex],
 			format = getPromoImageFormat(ab, settings),
-			imgFile = getImageFileName(getDocumentSlug() + "-promo", format),
+			imgFile = getImageFileName(docSlug + "-promo", format),
 			outputPath = docPath + imgFile,
 			opts = {
 				image_width: settings.promo_image_width || 1024,
@@ -2764,7 +2744,12 @@ function main() {
 	// NOTE: this function used to force single-res for png images > 3 megapixels,
 	//   because of resource limits on early iphones. This rule has been changed
 	//   to a warning and the limit increased.
-	function getOutputImagePixelRatio(width, height, format, doubleres) {
+	function getOutputImagePixelRatio(
+		width: number,
+		height: number,
+		format: ImageFormat,
+		doubleres: string | boolean
+	) {
 		var k = isTrue(doubleres) ? 2 : 1
 		// thresholds may be obsolete
 		var warnThreshold = format == "jpg" ? 32 * 1024 * 1024 : 5 * 1024 * 1024 // jpg and png
@@ -2784,8 +2769,13 @@ function main() {
 	// ab: assumed to be active artboard
 	// format: png, png24, jpg
 
-	function exportRasterImage(imgPath, ab, format, settings) {
-		// This constant is specified in the Illustrator Scripting Reference under ExportOptionsJPEG.
+	function exportRasterImage(
+		imgPath: string,
+		ab: Artboard,
+		format: ImageFormat,
+		settings: ai2HTMLSettings
+	) {
+		// This constant is specified: in the Illustrator Scripting Reference under ExportOptionsJPEG.
 		var MAX_JPG_SCALE = 776.19
 		var abPos = aiBoundsToRect(ab.artboardRect)
 		var imageScale, exportOptions, fileType
@@ -2809,11 +2799,11 @@ function main() {
 			exportOptions = new ExportOptionsPNG8()
 			exportOptions.colorCount = settings.png_number_of_colors
 			exportOptions.transparency = isTrue(settings.png_transparent)
-		} else if (format == "png24") {
+		} else if (format === "png24") {
 			fileType = ExportType.PNG24
 			exportOptions = new ExportOptionsPNG24()
 			exportOptions.transparency = isTrue(settings.png_transparent)
-		} else if (format == "jpg") {
+		} else if (format === "jpg") {
 			if (imageScale > MAX_JPG_SCALE) {
 				imageScale = MAX_JPG_SCALE
 				warn(
@@ -2837,20 +2827,21 @@ function main() {
 		app.activeDocument.exportFile(new File(imgPath), fileType, exportOptions)
 	}
 
-	function makeTmpDocument(doc, ab) {
-		// create temp document (pretty slow -- ~1.5s)
-		var artboardBounds = ab.artboardRect
-		var doc2 = app.documents.add(DocumentColorSpace.RGB, doc.width, doc.height, 1)
+	// create temp document (takes ~1.5s)
+	function makeTmpDocument(doc: Document, ab: Artboard) {
+		const artboardBounds = ab.artboardRect
+		let doc2 = app.documents.add(DocumentColorSpace.RGB, doc.width, doc.height, 1)
 		doc2.pageOrigin = doc.pageOrigin // not sure if needed
 		doc2.rulerOrigin = doc.rulerOrigin
-		// The following caused MRAP
+
+		// The following caused MRAP:
 		// doc2.artboards[0].artboardRect = ab.artboardRect;
 		doc2.artboards[0].artboardRect = artboardBounds
 		return doc2
 	}
 
 	// Copy contents of an artboard to a temporary document, excluding objects
-	//   that are hidden by masks
+	// that are hidden by masks
 	// items: Optional argument to copy specific layers or items (default is all layers in the doc)
 	// Returns a newly-created document containing artwork to export, or null
 	//   if no image should be created.
@@ -3024,7 +3015,7 @@ function main() {
 		return true
 	}
 
-	function rewriteSVGFile(path, id) {
+	function rewriteSVGFile(path: string, id: string) {
 		var svg = readFile(path, warn)
 		var selector
 		if (!svg) return
@@ -3043,13 +3034,13 @@ function main() {
 		saveTextFile(path, svg)
 	}
 
-	function reapplyEffectsInSVG(svg) {
+	function reapplyEffectsInSVG(svg: string) {
 		var rxp = /id="Z-(-[^"]+)"/g
 		var opacityRxp = /-opacity([0-9]+)/
 		var multiplyRxp = /-multiply/
-		function replace(a, b) {
-			var style = "",
-				retn
+		function replace(a: string, b: string): string {
+			let style: string = ""
+			let retn: string = ""
 			if (multiplyRxp.test(b)) {
 				style += "mix-blend-mode:multiply;"
 				b = b.replace(multiplyRxp, "")
@@ -3066,10 +3057,11 @@ function main() {
 			return retn
 		}
 
-		function parseOpacity(str) {
-			var found = str.match(opacityRxp)
+		function parseOpacity(s: string) {
+			var found = s.match(opacityRxp)
 			return parseInt(found[1]) / 100
 		}
+		//@ts-expect-error
 		return svg.replace(rxp, replace)
 	}
 
@@ -3091,7 +3083,7 @@ function main() {
 	// ai2html output generation functions
 	// ===================================
 
-	function generateArtboardDiv(ab, group, settings) {
+	function generateArtboardDiv(ab: Artboard, group, settings: ai2HTMLSettings) {
 		var id = nameSpace + getArtboardUniqueName(ab, settings)
 		var classname = nameSpace + "artboard"
 		var widthRange = getArtboardWidthRange(ab, group, settings)
@@ -3133,7 +3125,7 @@ function main() {
 		return html
 	}
 
-	function generateArtboardCss(ab, group, cssRules, settings) {
+	function generateArtboardCss(ab: Artboard, group, cssRules: string[], settings: ai2HTMLSettings) {
 		var abId = "#" + nameSpace + getArtboardUniqueName(ab, settings),
 			css = formatCssRule(abId, {
 				position: "relative",
@@ -3151,7 +3143,7 @@ function main() {
 		return css
 	}
 
-	function generateContainerQueryCss(ab, abId, group, settings) {
+	function generateContainerQueryCss(ab: Artboard, abId: string, group, settings: ai2HTMLSettings) {
 		var css = ""
 		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
 		var isSmallest = visibleRange[0] === 0

@@ -56,6 +56,10 @@ export interface ai2HTMLSettings {
 	alt_text: string
 	cache_bust_token?: number
 	create_config_file: boolean
+	scriptVersion: string
+	create_json_config_files: boolean
+	image_width: number
+	grouped_artboards: boolean
 	/**
 	 * Create a text block in the AI doc with common settings
 	 */

@@ -57,9 +57,9 @@ function forEachProperty(o: any[string], cb: (value: any, key: string) => any) {
 	}
 }
 
-function extend(o: any) {
-	for (var i = 1; i < arguments.length; i++) {
-		forEachProperty(arguments[i], add)
+function extend(o: any, ...args: any[]) {
+	for (var i = 1; i < args.length; i++) {
+		forEachProperty(args[i], add)
 	}
 	function add(v: any, k: string) {
 		o[k] = v

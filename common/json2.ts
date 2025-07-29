@@ -122,7 +122,7 @@ export default function initJSON() {
 	}
 
 	return {
-		stringify: function (value, replacer, space?: string) {
+		stringify: function (value, replacer?: {}, space?: string | number) {
 			var i
 			gap = ""
 			indent = ""

@@ -1,3 +1,5 @@
+import { ai2HTMLSettings } from "../ai2html/types"
+
 const rgbColor = {
 	red: 12,
 	green: 34,
@@ -52,4 +54,10 @@ function mockArtboard(ab: Partial<Artboard>) {
 	} as Artboard
 }
 
-export { rgbColor, spotColor, grayColor, artboard, mockArtboard }
+function mockAiToHtmlSettings(settings: Partial<ai2HTMLSettings>) {
+	return {
+		...settings
+	} as ai2HTMLSettings
+}
+
+export { rgbColor, spotColor, grayColor, artboard, mockArtboard, mockAiToHtmlSettings }

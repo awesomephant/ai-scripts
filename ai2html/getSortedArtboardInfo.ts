@@ -1,7 +1,6 @@
-export default function getSortedArtboardInfo(
-	artboards,
-	settings: ai2HTMLSettings
-) {
+// Todo
+
+export default function getSortedArtboardInfo(artboards, settings: ai2HTMLSettings) {
 	var arr = []
 	forEach(artboards, function (ab) {
 		arr.push({
