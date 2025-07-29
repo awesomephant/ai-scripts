@@ -93,6 +93,7 @@ import {
 	boundsIntersect,
 	shiftBounds
 } from "../common/geometryUtils"
+import getDateTimeStamp from "../common/getDateTimestamp"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -356,20 +357,6 @@ function main() {
 		addTextBlockContent(output, textBlockContent)
 		generateOutputHtml(output, group, settings)
 	} // end render()
-
-	// =================================
-	// JS utility functions
-	// =================================
-
-	function getDateTimeStamp() {
-		var d = new Date()
-		var year = d.getFullYear()
-		var date = zeroPad(d.getDate(), 2)
-		var month = zeroPad(d.getMonth() + 1, 2)
-		var hour = zeroPad(d.getHours(), 2)
-		var min = zeroPad(d.getMinutes(), 2)
-		return year + "-" + month + "-" + date + " " + hour + ":" + min
-	}
 
 	// ======================================
 	// Illustrator specific utility functions
