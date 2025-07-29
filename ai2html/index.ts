@@ -87,6 +87,7 @@ import cleanCodeBlock from "./cleanCodeBlock"
 import parseSettingsEntries from "./parseSettingsEntries"
 import roundTo from "../common/roundTo"
 import applyTemplate from "../common/applyTemplate"
+import { aiBoundsToRect } from "../common/geometryUtils"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -860,20 +861,6 @@ function main() {
 	// ai2html AI document reading functions
 	// ======================================
 
-	// Convert bounds coordinates (e.g. artboardRect, geometricBounds) to CSS-style coords
-	function convertAiBounds(rect: Bounds) {
-		var x = rect[0],
-			y = -rect[1],
-			w = Math.round(rect[2] - x),
-			h = -rect[3] - y
-		return {
-			left: x,
-			top: y,
-			width: w,
-			height: h
-		}
-	}
-
 	// TODO: prevent duplicate names? or treat duplicate names an an error condition?
 	// (artboard name is assumed to be unique in several places)
 	function getArtboardName(ab: Artboard) {
@@ -905,7 +892,7 @@ function main() {
 	function getArtboardUniqueName(ab, settings) {
 		var suffix = ""
 		if (settings.grouped_artboards) {
-			suffix = "-" + Math.round(convertAiBounds(ab.artboardRect).width)
+			suffix = "-" + Math.round(aiBoundsToRect(ab.artboardRect).width)
 		}
 		return getDocumentArtboardName(ab) + suffix
 	}
@@ -936,7 +923,7 @@ function main() {
 	// return the effective width of an artboard (the actual width, overridden by optional setting)
 	function getArtboardWidth(ab) {
 		var abSettings = getArtboardSettings(ab)
-		return abSettings.width || convertAiBounds(ab.artboardRect).width
+		return abSettings.width || aiBoundsToRect(ab.artboardRect).width
 	}
 
 	// get range of container widths that an ab is visible as a [min,max] array
@@ -1042,7 +1029,7 @@ function main() {
 		var largestId = -1
 		var largestArea = 0
 		forEachUsableArtboard(function (ab, i) {
-			var info = convertAiBounds(ab.artboardRect)
+			var info = aiBoundsToRect(ab.artboardRect)
 			var area = info.width * info.height
 			if (area > largestArea) {
 				largestId = i
@@ -1517,7 +1504,7 @@ function main() {
 		var charStyles = []
 		var baseStyle = deriveTextStyleCss(frameData)
 		var idPrefix = nameSpace + "ai" + findArtboardIndex(ab) + "-"
-		var abBox = convertAiBounds(ab.artboardRect)
+		var abBox = aiBoundsToRect(ab.artboardRect)
 		var divs = map(frameData, function (obj, i) {
 			var frame = textFrames[i]
 			var divId = frame.name ? makeKeyword(frame.name) : idPrefix + (i + 1)
@@ -1969,7 +1956,7 @@ function main() {
 		var lastPgStyle = pgData[pgData.length - 1].aiStyle
 		var isRotated = firstPgStyle.rotated
 		var aiBounds = isRotated ? getUntransformedTextBounds(thisFrame) : thisFrame.geometricBounds
-		var htmlBox = convertAiBounds(shiftBounds(aiBounds, -abBox.left, abBox.top))
+		var htmlBox = aiBoundsToRect(shiftBounds(aiBounds, -abBox.left, abBox.top))
 		var thisFrameAttributes = parseDataAttributes(thisFrame.note, JSON)
 		// estimated space between top of HTML container and character glyphs
 		// (related to differences in AI and CSS vertical positioning of text blocks)
@@ -2213,7 +2200,7 @@ function main() {
 	// Convert paths representing simple shapes to HTML and hide them
 	function exportSymbols(lyr, ab, masks, opts) {
 		var items = []
-		var abBox = convertAiBounds(ab.artboardRect)
+		var abBox = aiBoundsToRect(ab.artboardRect)
 		var html = ""
 		forLayer(lyr)
 
@@ -2903,7 +2890,7 @@ function main() {
 	function exportRasterImage(imgPath, ab, format, settings) {
 		// This constant is specified in the Illustrator Scripting Reference under ExportOptionsJPEG.
 		var MAX_JPG_SCALE = 776.19
-		var abPos = convertAiBounds(ab.artboardRect)
+		var abPos = aiBoundsToRect(ab.artboardRect)
 		var imageScale, exportOptions, fileType
 
 		if (settings.image_width) {
@@ -3212,7 +3199,7 @@ function main() {
 		var classname = nameSpace + "artboard"
 		var widthRange = getArtboardWidthRange(ab, group, settings)
 		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
-		var abBox = convertAiBounds(ab.artboardRect)
+		var abBox = aiBoundsToRect(ab.artboardRect)
 		var aspectRatio = abBox.width / abBox.height
 		var inlineStyle = ""
 		var inlineSpacerStyle = ""
