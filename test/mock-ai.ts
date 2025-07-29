@@ -31,4 +31,25 @@ const grayColor = {
 	gray: 12
 }
 
-export { rgbColor, spotColor, grayColor }
+const artboard: Artboard = {
+	name: "test",
+	artboardRect: [0, 0, 100, 200],
+	parent: [],
+	showCenter: false,
+	showCrossHairs: false,
+	showSafeAreas: false,
+	typename: "Artboard",
+	rulerOrigin: [0, 0],
+	rulerPAR: 1,
+	remove: () => {},
+	removeAll: () => {}
+}
+
+function mockArtboard(ab: Partial<Artboard>) {
+	return {
+		...artboard,
+		...ab
+	} as Artboard
+}
+
+export { rgbColor, spotColor, grayColor, artboard, mockArtboard }

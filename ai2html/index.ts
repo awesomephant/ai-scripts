@@ -93,8 +93,9 @@ import {
 	boundsIntersect,
 	shiftBounds
 } from "../common/geometryUtils"
-import getDateTimeStamp from "../common/getDateTimestamp"
+import getDateTimeStamp from "../common/getDateTimeStamp"
 import aiColorToCss from "../common/aiColorToCss"
+import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -701,8 +702,8 @@ function main() {
 		})
 	}
 
-	function createSettingsBlock(settings) {
-		const bounds = getAllArtboardBounds()
+	function createSettingsBlock(settings: ai2HTMLSettings) {
+		const bounds = getAllArtboardBounds(doc.artboards)
 		const fontSize = 15
 		const leading = 19
 		const extraLines = 6
@@ -712,7 +713,7 @@ function main() {
 		const settingsLines: string[] = ["ai2html-settings"]
 		var layer, rect, textArea, height
 
-		forEach(settings.settings_block, function (key) {
+		forEach(settings.settings_block, function (key: keyof ai2HTMLSettings) {
 			settingsLines.push(key + ": " + settings[key])
 		})
 
@@ -727,6 +728,7 @@ function main() {
 
 		height = leading * (settingsLines.length + extraLines)
 		rect = layer.pathItems.rectangle(top, left, width, height)
+		// @ts-expect-error bad type def
 		textArea = layer.textFrames.areaText(rect)
 		textArea.textRange.autoLeading = false
 		textArea.textRange.characterAttributes.leading = leading
@@ -852,25 +854,6 @@ function main() {
 
 	function getDocumentArtboardName(ab) {
 		return getDocumentSlug() + "-" + getArtboardName(ab)
-	}
-
-	// return coordinates of bounding box of all artboards
-	function getAllArtboardBounds() {
-		var rect, bounds
-		for (var i = 0, n = doc.artboards.length; i < n; i++) {
-			rect = doc.artboards[i].artboardRect
-			if (i === 0) {
-				bounds = rect
-			} else {
-				bounds = [
-					Math.min(rect[0], bounds[0]),
-					Math.max(rect[1], bounds[1]),
-					Math.max(rect[2], bounds[2]),
-					Math.min(rect[3], bounds[3])
-				]
-			}
-		}
-		return bounds
 	}
 
 	// return the effective width of an artboard (the actual width, overridden by optional setting)
@@ -2538,7 +2521,6 @@ function main() {
 	}
 
 	// Capture and save an image to the filesystem and return html embed code
-
 	function exportImage(imgName, format, ab, masks, layer, settings) {
 		var imgFile = getImageFileName(imgName, format)
 		var outputPath = pathJoin(getImageFolder(settings), imgFile)

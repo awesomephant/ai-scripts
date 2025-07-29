@@ -4,7 +4,13 @@
 - `readYamlConfigFile()`
   - extracted (unused)
 - `convertAiColor()`
+  - extracted
   - renamed to `aiColorToCss()`
   - refactored source
   - added unit tests
   - extracted `darkGrayToBlack()`
+- `getAllArtboardBounds()`
+  - extracted
+  - added unit tests
+  - refactored source
+  - now returns `null` instead of `undefined` when passed an empty array
