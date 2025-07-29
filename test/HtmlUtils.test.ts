@@ -1,4 +1,4 @@
-import { cleanHtmlTags, findHtmlTag, injectCSSinSVG } from "../common/HtmlUtils"
+import { cleanHtmlTags, findHtmlTag, injectCSSinSVG } from "../common/htmlUtils"
 
 describe("cleanHtmlTags()", () => {
 	it("converts smart quotes to double quotes", function () {
