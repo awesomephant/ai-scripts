@@ -80,7 +80,7 @@ import compareVersions from "../common/compareVersions"
 import { formatCssRule, formatCssColor } from "../common/CssUtils"
 import { findHtmlTag, cleanHtmlTags, injectCSSinSVG } from "../common/HtmlUtils"
 import getSymbolClass from "./getSymbolClass"
-
+import { parseYaml } from "../common/YamlUtils"
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
@@ -393,22 +393,11 @@ function main() {
 		return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
 	}
 
-	function readYamlConfigFile(path) {
-		return fileExists(path) ? parseYaml(readTextFile(path)) : null
+	function readYamlConfigFile(path: string) {
+		return fileExists(path) ? parseYaml(readTextFile(path), JSON) : null
 	}
 
-	// Very simple Yaml parsing. Does not implement nested properties, arrays and other features
-	function parseYaml(str) {
-		// TODO: strip comments // var comment = /\s*/
-		var o = {}
-		var lines = stringToLines(str)
-		for (var i = 0; i < lines.length; i++) {
-			parseKeyValueString(lines[i], o, JSON)
-		}
-		return o
-	}
-
-	function readJSONFile(fpath) {
+	function readJSONFile(fpath: string) {
 		var content = readTextFile(fpath)
 		var json = null
 		if (!content) {
@@ -424,7 +413,7 @@ function main() {
 		return json
 	}
 
-	function checkForOutputFolder(folderPath, nickname) {
+	function checkForOutputFolder(folderPath: string, nickname: string) {
 		var outputFolder = new Folder(folderPath)
 		if (!outputFolder.exists) {
 			var outputFolderCreated = outputFolder.create()
