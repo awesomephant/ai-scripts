@@ -1,0 +1,101 @@
+import { forEach } from "./arrayUtils"
+
+function folderExists(path: string) {
+	return new Folder(path).exists
+}
+
+function fileExists(path: string) {
+	return new File(path).exists
+}
+
+function deleteFile(path: string) {
+	var file = new File(path)
+	if (file.exists) {
+		file.remove()
+	}
+}
+function readFile(fpath: string, onerror?: (err: string) => any, enc?: string) {
+	var content = null
+	var file = new File(fpath)
+	if (file.exists) {
+		if (enc) {
+			file.encoding = enc
+		}
+		file.open("r")
+		if (file.error && onerror) {
+			// (on macos) restricted permissions will cause an error here
+			onerror("Unable to open " + file.fsName + ": [" + file.error + "]")
+			return null
+		}
+		content = file.read()
+		file.close()
+		// (on macos) 'file.length' triggers a file operation that returns -1 if unable to access file
+		if (!content && (file.length > 0 || file.length == -1) && onerror) {
+			onerror("Unable to read from " + file.fsName + " (reported size: " + file.length + " bytes)")
+		}
+	} else {
+		if (onerror) {
+			onerror(fpath + " could not be found.")
+		}
+	}
+	return content
+}
+
+function readTextFile(fpath: string) {
+	// This function used to use File#eof and File#readln(), but
+	// that failed to read the last line when missing a final newline.
+	return readFile(fpath, () => {}, "UTF-8") || ""
+}
+
+function saveTextFile(dest: string, contents: string) {
+	var fd = new File(dest)
+	fd.open("w", "TEXT", "TEXT")
+	fd.lineFeed = "Unix"
+	fd.encoding = "UTF-8"
+	fd.writeln(contents)
+	fd.close()
+}
+
+// Similar to Node.js path.join()
+function pathJoin(...args: string[]) {
+	var path = ""
+	forEach(args, function (arg, i) {
+		if (!arg) return
+		arg = String(arg)
+		// Drop leading slash, except on the first argument  because that's
+		// necessary to differentiate different volumes on Windows
+		if (i > 0) {
+			arg = arg.replace(/^\/+/, "")
+		}
+		arg = arg.replace(/\/+$/, "")
+
+		if (path.length > 0) {
+			path += "/"
+		}
+		path += arg
+	})
+	return path
+}
+
+// Split a full path into directory and filename parts
+function pathSplit(path: string) {
+	var parts = path.split("/")
+	var filename = parts.pop()
+	return [parts.join("/"), filename]
+}
+
+function getScriptDirectory() {
+	return new File($.fileName).parent
+}
+
+export {
+	folderExists,
+	fileExists,
+	deleteFile,
+	pathJoin,
+	pathSplit,
+	readTextFile,
+	saveTextFile,
+	getScriptDirectory,
+	readFile
+}

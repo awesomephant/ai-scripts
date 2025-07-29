@@ -1,4 +1,4 @@
-import { pathJoin } from "../common/stringUtils"
+import { pathJoin } from "../common/fileUtils"
 
 describe("pathJoin()", () => {
 	it("Adds forward slash to separate directories", () => {

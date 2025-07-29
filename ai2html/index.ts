@@ -24,7 +24,6 @@ import {
 	defaultFonts,
 	defaultSettings
 } from "./constants"
-
 import {
 	arraySubtract,
 	contains,
@@ -56,10 +55,20 @@ import {
 	trim,
 	truncateString,
 	zeroPad,
-	pathJoin,
 	parseAsArray,
 	stripSettingsFileComments
 } from "../common/stringUtils"
+import {
+	fileExists,
+	folderExists,
+	deleteFile,
+	pathSplit,
+	pathJoin,
+	readTextFile,
+	saveTextFile,
+	getScriptDirectory,
+	readFile
+} from "../common/fileUtils"
 import { isTrue, isFalse } from "../common/booleanUtils"
 import ProgressWindow from "../common/ProgressWindow"
 import parseObjectName from "./parseObjectName"
@@ -76,6 +85,7 @@ import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
 import parseSettingsEntries from "./parseSettingsEntries"
+import roundTo from "../common/roundTo"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -344,12 +354,6 @@ function main() {
 	// JS utility functions
 	// =================================
 
-	// precision: number of decimals in rounded number
-	function roundTo(number, precision) {
-		var d = Math.pow(10, precision || 0)
-		return Math.round(number * d) / d
-	}
-
 	function getDateTimeStamp() {
 		var d = new Date()
 		var year = d.getFullYear()
@@ -385,13 +389,6 @@ function main() {
 		return template.replace(mustachePattern, replace).replace(ejsPattern, replace)
 	}
 
-	// Split a full path into directory and filename parts
-	function pathSplit(path) {
-		var parts = path.split("/")
-		var filename = parts.pop()
-		return [parts.join("/"), filename]
-	}
-
 	// ======================================
 	// Illustrator specific utility functions
 	// ======================================
@@ -409,21 +406,6 @@ function main() {
 		return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
 	}
 
-	function folderExists(path) {
-		return new Folder(path).exists
-	}
-
-	function fileExists(path) {
-		return new File(path).exists
-	}
-
-	function deleteFile(path) {
-		var file = new File(path)
-		if (file.exists) {
-			file.remove()
-		}
-	}
-
 	function readYamlConfigFile(path) {
 		return fileExists(path) ? parseYaml(readTextFile(path)) : null
 	}
@@ -437,37 +419,6 @@ function main() {
 			parseKeyValueString(lines[i], o, JSON)
 		}
 		return o
-	}
-
-	function readFile(fpath, enc) {
-		var content = null
-		var file = new File(fpath)
-		if (file.exists) {
-			if (enc) {
-				file.encoding = enc
-			}
-			file.open("r")
-			if (file.error) {
-				// (on macos) restricted permissions will cause an error here
-				warn("Unable to open " + file.fsName + ": [" + file.error + "]")
-				return null
-			}
-			content = file.read()
-			file.close()
-			// (on macos) 'file.length' triggers a file operation that returns -1 if unable to access file
-			if (!content && (file.length > 0 || file.length == -1)) {
-				warn("Unable to read from " + file.fsName + " (reported size: " + file.length + " bytes)")
-			}
-		} else {
-			warn(fpath + " could not be found.")
-		}
-		return content
-	}
-
-	function readTextFile(fpath) {
-		// This function used to use File#eof and File#readln(), but
-		// that failed to read the last line when missing a final newline.
-		return readFile(fpath, "UTF-8") || ""
 	}
 
 	function readJSONFile(fpath) {
@@ -484,15 +435,6 @@ function main() {
 			error("Error parsing JSON from " + fpath + ": [" + e.message + "]")
 		}
 		return json
-	}
-
-	function saveTextFile(dest, contents) {
-		var fd = new File(dest)
-		fd.open("w", "TEXT", "TEXT")
-		fd.lineFeed = "Unix"
-		fd.encoding = "UTF-8"
-		fd.writeln(contents)
-		fd.close()
 	}
 
 	function checkForOutputFolder(folderPath, nickname) {
@@ -560,7 +502,7 @@ function main() {
 		return msg
 	}
 
-	function warn(msg) {
+	function warn(msg: string) {
 		warnings.push(msg)
 	}
 
@@ -677,10 +619,6 @@ function main() {
 			}
 			names.push(name)
 		})
-	}
-
-	function getScriptDirectory() {
-		return new File($.fileName).parent
 	}
 
 	// Import program settings and custom html, css and js code from specially
@@ -2771,7 +2709,7 @@ function main() {
 	}
 
 	function generateInlineSvg(imgPath, imgClass, imgStyle, settings) {
-		var svg = readFile(imgPath) || ""
+		var svg = readFile(imgPath, warn) || ""
 		var attr = ' class="' + imgClass + '"'
 		if (imgStyle) {
 			attr += ' style="' + imgStyle + '"'
@@ -3227,7 +3165,7 @@ function main() {
 	}
 
 	function rewriteSVGFile(path, id) {
-		var svg = readFile(path)
+		var svg = readFile(path, warn)
 		var selector
 		if (!svg) return
 		// replace id created by Illustrator (relevant for inline SVG)

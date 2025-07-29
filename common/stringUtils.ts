@@ -114,27 +114,6 @@ function stripSettingsFileComments(s: string) {
 	return s.replace(rxp, "")
 }
 
-// Similar to Node.js path.join()
-function pathJoin(...args: string[]) {
-	var path = ""
-	forEach(args, function (arg, i) {
-		if (!arg) return
-		arg = String(arg)
-		// Drop leading slash, except on the first argument  because that's
-		// necessary to differentiate different volumes on Windows
-		if (i > 0) {
-			arg = arg.replace(/^\/+/, "")
-		}
-		arg = arg.replace(/\/+$/, "")
-
-		if (path.length > 0) {
-			path += "/"
-		}
-		path += arg
-	})
-	return path
-}
-
 export {
 	trim,
 	trimQuotationMarks,
@@ -150,6 +129,5 @@ export {
 	addEnclosingTag,
 	stripTag,
 	parseAsArray,
-	pathJoin,
 	stripSettingsFileComments
 }
