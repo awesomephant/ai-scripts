@@ -14,10 +14,7 @@ function getWidthRangeForConfig(settings: ai2HTMLSettings): [number, number] {
 	}
 	return [min, max]
 }
-export default function getCommonOutputSettings(
-	settings: ai2HTMLSettings,
-	scriptVersion: string
-) {
+export default function getCommonOutputSettings(settings: ai2HTMLSettings, scriptVersion: string) {
 	var range = getWidthRangeForConfig(settings)
 	return {
 		ai2html_version: scriptVersion,

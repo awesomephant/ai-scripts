@@ -7,7 +7,7 @@
 
 ## ai2html
 
-Forked from [everyone's favourite newspaper](https://github.com/newsdev/ai2html).
+Forked from [the NYT version](https://github.com/newsdev/ai2html).
 
 ### Goals
 

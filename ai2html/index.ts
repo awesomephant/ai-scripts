@@ -3244,7 +3244,7 @@ function main() {
 		return css
 	}
 
-	function getCommonOutputSettings(settings) {
+	function getCommonOutputSettings(settings: ai2HTMLSettings) {
 		var range = getWidthRangeForConfig(settings)
 		return {
 			ai2html_version: scriptVersion,
@@ -3256,9 +3256,9 @@ function main() {
 		}
 	}
 
-	function generateJsonSettingsFileContent(settings) {
+	function generateJsonSettingsFileContent(settings: ai2HTMLSettings) {
 		var o = getCommonOutputSettings(settings)
-		forEach(settings.config_file, function (key) {
+		forEach(settings.config_file, (key) => {
 			var val = String(settings[key])
 			if (isTrue(val)) val = true
 			else if (isFalse(val)) val = false
@@ -3268,7 +3268,7 @@ function main() {
 	}
 
 	// Create a settings file (optimized for the NYT Scoop CMS)
-	function generateYamlFileContent(settings) {
+	function generateYamlFileContent(settings: ai2HTMLSettings) {
 		var o = getCommonOutputSettings(settings)
 		var lines = []
 		lines.push("ai2html_version: " + scriptVersion)
@@ -3304,7 +3304,7 @@ function main() {
 	}
 
 	// Write an HTML page to a file for NYT Preview
-	function outputLocalPreviewPage(textForFile, localPreviewDestination, settings) {
+	function outputLocalPreviewPage(textForFile, localPreviewDestination, settings: ai2HTMLSettings) {
 		var localPreviewTemplateText = readTextFile(docPath + settings.local_preview_template)
 		settings.ai2htmlPartial = textForFile // TODO: don't modify global settings this way
 		var localPreviewHtml = applyTemplate(localPreviewTemplateText, settings)
@@ -3333,7 +3333,7 @@ function main() {
 	}
 
 	// Wrap content HTML in a <div>, add styles and resizer script, write to a file
-	function generateOutputHtml(content, group, settings) {
+	function generateOutputHtml(content, group, settings: ai2HTMLSettings) {
 		var pageName = group.groupName
 		var linkSrc = settings.clickable_link || ""
 		var responsiveJs = ""
