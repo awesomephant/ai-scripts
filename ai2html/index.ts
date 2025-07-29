@@ -86,6 +86,7 @@ import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
 import parseSettingsEntries from "./parseSettingsEntries"
 import roundTo from "../common/roundTo"
+import applyTemplate from "../common/applyTemplate"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -375,20 +376,6 @@ function main() {
 		return true
 	}
 
-	// Apply very basic string substitution to a template
-	function applyTemplate(template, replacements) {
-		var keyExp = "([_a-zA-Z][\\w-]*)"
-		var mustachePattern = new RegExp("\\{\\{\\{? *" + keyExp + " *\\}\\}\\}?", "g")
-		var ejsPattern = new RegExp("<%=? *" + keyExp + " *%>", "g")
-		var replace = function (match, name) {
-			var lcname = name.toLowerCase()
-			if (name in replacements) return replacements[name]
-			if (lcname in replacements) return replacements[lcname]
-			return match
-		}
-		return template.replace(mustachePattern, replace).replace(ejsPattern, replace)
-	}
-
 	// ======================================
 	// Illustrator specific utility functions
 	// ======================================
@@ -506,7 +493,7 @@ function main() {
 		warnings.push(msg)
 	}
 
-	function error(msg) {
+	function error(msg: string) {
 		var e = new Error(msg)
 		e.name = "UserError"
 		throw e

@@ -36,7 +36,14 @@ export interface ai2HTMLSettings {
 	 * Inserts a max-width css instruction on the div containing the ai2html partial. The width should be specified in pixels.
 	 */
 	max_width: number
-	output: "one-file" | "multiple-files"
+	output:
+		| "one-file"
+		| "multiple-files"
+		| "one-file-for-all-artboards" // @deprecated
+		| "one-file-for-all-artboards" // @deprecated
+		| "preview-one-file" // @deprecated
+		| "one-file-per-artboard" // @deprecated
+		| "preview-multiple-files" // @deprecated
 	/**
 	 * Defaults to the name of the AI file
 	 */
