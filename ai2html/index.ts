@@ -87,7 +87,7 @@ import cleanCodeBlock from "./cleanCodeBlock"
 import parseSettingsEntries from "./parseSettingsEntries"
 import roundTo from "../common/roundTo"
 import applyTemplate from "../common/applyTemplate"
-import { aiBoundsToRect } from "../common/geometryUtils"
+import { aiBoundsToRect, boundsAreSimilar } from "../common/geometryUtils"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -364,17 +364,6 @@ function main() {
 		var hour = zeroPad(d.getHours(), 2)
 		var min = zeroPad(d.getMinutes(), 2)
 		return year + "-" + month + "-" + date + " " + hour + ":" + min
-	}
-
-	// Test if two rectangles are the same, to within a given tolerance
-	// a, b: two arrays containing AI rectangle coordinates
-	// maxOffs: maximum pixel deviation on any side
-	function testSimilarBounds(a, b, maxOffs) {
-		if (maxOffs >= 0 === false) maxOffs = 1
-		for (var i = 0; i < 4; i++) {
-			if (Math.abs(a[i] - b[i]) > maxOffs) return false
-		}
-		return true
 	}
 
 	// ======================================
@@ -1819,7 +1808,7 @@ function main() {
 		var frames = []
 		forEach(masks, function (o) {
 			var clipRect = o.mask.geometricBounds
-			if (testSimilarBounds(abRect, clipRect, 5)) {
+			if (boundsAreSimilar(abRect, clipRect, 5)) {
 				// if clip path is masking the current artboard, skip the test
 				return
 			}

@@ -17,4 +17,22 @@ function aiBoundsToRect(rect: Bounds): coords {
 	return { left, top, width, height }
 }
 
-export { aiBoundsToRect }
+/**
+ * Test if two rectangles are the same, to within a given tolerance
+ * a, b: two arrays containing AI rectangle coordinates
+ * maxOffs: maximum pixel deviation on any side
+ */
+
+function boundsAreSimilar(a: Bounds, b: Bounds, maxOffs: number): boolean {
+	if (maxOffs < 0) {
+		maxOffs = 1
+	}
+	for (let i = 0; i < 4; i++) {
+		if (Math.abs(a[i] - b[i]) > maxOffs) {
+			return false
+		}
+	}
+	return true
+}
+
+export { aiBoundsToRect, boundsAreSimilar }
