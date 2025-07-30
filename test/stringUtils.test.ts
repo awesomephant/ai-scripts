@@ -1,4 +1,10 @@
-import { stripSettingsFileComments, stripTag, stringToLines, zeroPad } from "../common/stringUtils"
+import {
+	stripSettingsFileComments,
+	stripTag,
+	stringToLines,
+	zeroPad,
+	makeList
+} from "../common/stringUtils"
 
 describe("stripSettingsFileComments()", function () {
 	it("strips double-slash comments", () => {
@@ -39,5 +45,30 @@ describe("zeroPad()", () => {
 		expect(zeroPad(100, 2)).toBe("100")
 		expect(zeroPad("", 2)).toBe("00")
 		expect(zeroPad("10", 2)).toBe("10")
+	})
+})
+
+describe("makeList()", () => {
+	const rule = "\n================\n"
+
+	it("turns string array into well-formatted list output", () => {
+		const l = ["apples", "oranges", "bananas"]
+		const res = makeList(l, "fruit", "fruits", rule)
+		expect(res).toContain("fruits" + rule)
+		expect(res).toContain("apples")
+		expect(res).toContain("oranges")
+		expect(res).toContain("bananas")
+		expect(res).not.toContain("fruit" + rule)
+	})
+	it("uses singular label if only one item passed", () => {
+		const l = ["apples"]
+		const res = makeList(l, "fruit", "fruits", rule)
+		expect(res).toContain("fruit" + rule)
+		expect(res).toContain("apples")
+		expect(res).not.toContain("fruits" + rule)
+	})
+	it("returns empty string if empty list passed", () => {
+		const res = makeList([], "fruit", "fruits", rule)
+		expect(res).toBe("")
 	})
 })

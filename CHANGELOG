@@ -16,3 +16,4 @@
   - now returns `null` instead of `undefined` when passed an empty array
 - dropped `getArtboardSettings()`, `parseObjectName()` does the same thing
 - dropped `getDocumentSlug()`
+- extracted `makeList()`

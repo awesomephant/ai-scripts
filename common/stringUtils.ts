@@ -114,6 +114,16 @@ function stripSettingsFileComments(s: string) {
 	return s.replace(rxp, "")
 }
 
+function makeList(items: string[], singular: string, plural: string, rule: string) {
+	let list = ""
+	if (items.length > 0) {
+		list += "\r" + (items.length == 1 ? singular : plural) + rule
+		for (var i = 0; i < items.length; i++) {
+			list += "\u2022 " + items[i] + "\r"
+		}
+	}
+	return list
+}
 export {
 	trim,
 	trimQuotationMarks,
@@ -129,5 +139,6 @@ export {
 	addEnclosingTag,
 	stripTag,
 	parseAsArray,
-	stripSettingsFileComments
+	stripSettingsFileComments,
+	makeList
 }

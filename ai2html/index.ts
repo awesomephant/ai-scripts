@@ -56,7 +56,8 @@ import {
 	truncateString,
 	zeroPad,
 	parseAsArray,
-	stripSettingsFileComments
+	stripSettingsFileComments,
+	makeList
 } from "../common/stringUtils"
 import {
 	fileExists,
@@ -93,10 +94,11 @@ import {
 	boundsIntersect,
 	shiftBounds
 } from "../common/geometryUtils"
-import getDateTimeStamp from "../common/getDateTimeStamp"
+import getDateTimeStamp from "../common/getDateTimestamp"
 import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
 import { forEachUsableArtboard, getArtboardResponsiveness } from "./ArtboardUtils"
+import makeRgbColor from "../common/makeRgbColor"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -267,7 +269,7 @@ function main() {
 	}
 
 	// render a group of artboards and save to a file
-	function renderArtboardGroup(group, masks, settings, textBlockContent) {
+	function renderArtboardGroup(group, masks, settings: ai2HTMLSettings, textBlockContent) {
 		var output = { html: "", js: "", css: "" }
 
 		forEach(group.artboards, function (activeArtboard: Artboard) {
@@ -551,7 +553,7 @@ function main() {
 	}
 
 	// Import program settings and custom html, css and js code from specially
-	//   formatted text blocks
+	// formatted text blocks
 	function initSpecialTextBlocks() {
 		var rxp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
 		var settings = null
@@ -702,7 +704,7 @@ function main() {
 
 	function createSettingsBlock(settings: ai2HTMLSettings) {
 		const bounds = getAllArtboardBounds(doc.artboards)
-		const fontSize = 15
+		const fontSize = 14
 		const leading = 19
 		const extraLines = 6
 		const width = 400
@@ -730,6 +732,7 @@ function main() {
 		textArea = layer.textFrames.areaText(rect)
 		textArea.textRange.autoLeading = false
 		textArea.textRange.characterAttributes.leading = leading
+		textArea.textRange.characterAttributes.fillColor = makeRgbColor([255, 255, 255])
 		textArea.textRange.characterAttributes.size = fontSize
 		textArea.contents = settingsLines.join("\n")
 		textArea.name = "ai2html-settings"
@@ -773,9 +776,9 @@ function main() {
 		} else {
 			alertHed = "Nice work!"
 		}
-		alertText = makeList(errors, "Error", "Errors")
-		alertText += makeList(warnings, "Warning", "Warnings")
-		alertText += makeList(feedback, "Information", "Information")
+		alertText = makeList(errors, "Error", "Errors", rule)
+		alertText += makeList(warnings, "Warning", "Warnings", rule)
+		alertText += makeList(feedback, "Information", "Information", rule)
 		alertText += "\n"
 		if (showPrompt) {
 			alertText += rule + "Generate promo image?"
@@ -787,16 +790,6 @@ function main() {
 			makePromo = false
 		}
 
-		function makeList(items, singular, plural) {
-			var list = ""
-			if (items.length > 0) {
-				list += "\r" + (items.length == 1 ? singular : plural) + rule
-				for (var i = 0; i < items.length; i++) {
-					list += "\u2022 " + items[i] + "\r"
-				}
-			}
-			return list
-		}
 		return makePromo
 	}
 
