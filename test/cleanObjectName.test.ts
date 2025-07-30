@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import cleanObjectName from "../ai2html/cleanObjectName"
 
 it("removes colon-delimited annotation", function () {

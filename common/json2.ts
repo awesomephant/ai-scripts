@@ -57,8 +57,8 @@ export default function initJSON() {
 			case "number":
 				return isFinite(value) ? String(value) : "null"
 			case "boolean":
-			case "null":
-				return String(value)
+			// case "null":
+			// 	return String(value)
 			case "object":
 				if (!value) {
 					return "null"

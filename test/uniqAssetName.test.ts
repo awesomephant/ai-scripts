@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import uniqAssetName from "../ai2html/uniqAssetName"
 
 it("adds numerical suffix to create unique names", function () {

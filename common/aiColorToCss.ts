@@ -1,40 +1,38 @@
 import { formatCssColor } from "./cssUtils"
 import darkGrayToBlack from "./darkGrayToBlack"
 
+import type { Color, RGBColor, SpotColor, GrayColor, NoColor, CMYKColor } from "../ai2html/types"
+
 interface aiColorToCssResult {
 	color: string
 	warning: string | null
 }
 
 /**
- *
- * @param color a color object, e.g. RGBColor
+ * Transforms an Illustrator object into a CSS color string
  * @param opacity (optional): opacity [0-100]
  * @returns
  */
-export default function aiColorToCss(color: Color, opacity: number = 100): aiColorToCssResult {
-	//@ts-expect-error see https://github.com/docsforadobe/Types-for-Adobe/issues/153
+
+export default function aiColorToCss(
+	color: RGBColor | SpotColor | GrayColor | NoColor | CMYKColor,
+	opacity: number = 100
+): aiColorToCssResult {
 	if (color.typename === "SpotColor") {
-		//@ts-expect-error
 		return aiColorToCss(color.spot.color, opacity)
 	}
-	//@ts-expect-error
 	if (color.typename === "RGBColor") {
-		//@ts-expect-error
 		const [r, g, b] = darkGrayToBlack(color)
 		return {
 			color: formatCssColor(r, g, b, opacity),
 			warning: null
 		}
-		//@ts-expect-error
 	} else if (color.typename === "GrayColor") {
-		//@ts-expect-error
 		const v = Math.round(((100 - color.gray) / 100) * 255)
 		return {
 			color: formatCssColor(v, v, v, opacity),
 			warning: null
 		}
-		//@ts-expect-error
 	} else if (color.typename === "NoColor") {
 		// warnings are processed later, after ranges of same-style chars are identified
 		// TODO: add text-fill-specific warnings elsewhere
@@ -46,7 +44,6 @@ export default function aiColorToCss(color: Color, opacity: number = 100): aiCol
 	}
 	return {
 		color: formatCssColor(0, 0, 0, opacity),
-		//@ts-expect-error
 		warning: `The text "%s" has ${color.typename} fill. Please fill it with an RGB color.`
 	}
 }

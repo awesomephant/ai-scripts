@@ -85,7 +85,7 @@ import { parseYaml } from "../common/yamlUtils"
 import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
 import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
-import parseSettingsEntries from "./parseSettingsEntries"
+import { parseSettingsEntries, parseSettingsEntry } from "./parseSettingsEntries"
 import roundTo from "../common/roundTo"
 import applyTemplate from "../common/applyTemplate"
 import {
@@ -100,6 +100,7 @@ import { forEachUsableArtboard, getArtboardResponsiveness } from "./ArtboardUtil
 import makeRgbColor from "../common/makeRgbColor"
 import getDateTimestamp from "../common/getDateTimestamp"
 import formatError from "../common/formatError"
+import updateSettingsEntry from "./updateSettingsEntry"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -732,32 +733,6 @@ function main() {
 		return textArea
 	}
 
-	// Update an entry in the settings text block (or add a new entry if not found)
-	function updateSettingsEntry(key, value) {
-		var block = doc.textFrames.getByName("ai2html-settings")
-		var entry = key + ": " + value
-		var updated = false
-		var lines
-		if (!block) return
-		lines = stringToLines(block.contents)
-		// one alternative to splitting contents into lines is to iterate
-		//   over paragraphs, but an error is thrown when accessing an empty pg
-		forEach(lines, function (line, i) {
-			var data = parseSettingsEntry(line)
-			if (!updated && data && data[0] == key) {
-				lines[i] = entry
-				updated = true
-			}
-		})
-		if (!updated) {
-			// entry not found; adding new entry at the top of the list,
-			// so it will be visible if the content overflows the text frame
-			lines.splice(1, 0, entry)
-		}
-		docIsSaved = false // doc has changed, need to save
-		block.contents = lines.join("\n")
-	}
-
 	// Show alert or prompt; return true if promo image should be generated
 	function showCompletionAlert(showPrompt: boolean = false) {
 		var rule = "\n================\n"
@@ -774,7 +749,6 @@ function main() {
 		alertText += "\n"
 		if (showPrompt) {
 			alertText += rule + "Generate promo image?"
-			// confirm(<msg>, false) makes "Yes" the default (at Baden's request).
 			makePromo = confirm(alertHed + alertText, false)
 		} else {
 			alertText += rule + "ai2html v" + scriptVersion
@@ -2616,8 +2590,8 @@ function main() {
 		})
 	}
 
-	// ab: artboard (assumed to be the active artboard)
-	function captureArtboardImage(imgName, ab, masks, settings) {
+	// ab: the active artboard
+	function captureArtboardImage(imgName, ab: Artboard, masks, settings) {
 		var formats = settings.image_format
 		var imgHtml
 
@@ -2684,12 +2658,14 @@ function main() {
 		return html
 	}
 
-	function incrementCacheBustToken(settings) {
-		var c = settings.cache_bust_token
-		if (parseInt(c) != +c) {
+	function incrementCacheBustToken(settings: ai2HTMLSettings) {
+		var c = settings.cache_bust_token || 0
+		if (c < 0) {
 			warn("cache_bust_token should be a positive integer")
 		} else {
-			updateSettingsEntry("cache_bust_token", +c + 1)
+			updateSettingsEntry(doc, "cache_bust_token", +c + 1, () => {
+				docIsSaved = false
+			})
 		}
 	}
 

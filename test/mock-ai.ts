@@ -1,12 +1,13 @@
 import { ai2HTMLSettings } from "../ai2html/types"
+import type { RGBColor, SpotColor } from "../ai2html/types"
 
-const rgbColor = {
+const rgbColor: RGBColor = {
+	typename: "RGBColor",
 	red: 12,
 	green: 34,
-	blue: 56,
-	typename: "RGBColor"
+	blue: 56
 }
-const spotColor = {
+const spotColor: SpotColor = {
 	typename: "SpotColor",
 	tint: 100,
 	spot: {

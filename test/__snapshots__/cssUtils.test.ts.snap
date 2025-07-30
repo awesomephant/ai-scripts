@@ -1,13 +1,13 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`formatCssRule formats a single rule 1`] = `
+exports[`formatCssRule > formats a single rule 1`] = `
 ".selector {
 	color:red;
 }
 "
 `;
 
-exports[`formatCssRule formats multiple rules 1`] = `
+exports[`formatCssRule > formats multiple rules 1`] = `
 ".selector {
 	color:red;
 	font-size:2rem;

@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import formatError from "../common/formatError"
 
 it("works with name = UserError", () => {

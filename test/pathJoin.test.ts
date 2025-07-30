@@ -1,3 +1,4 @@
+import { it, expect, describe } from "vitest"
 import { pathJoin } from "../common/fileUtils"
 
 describe("pathJoin()", () => {

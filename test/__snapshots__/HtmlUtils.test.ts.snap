@@ -1,3 +1,3 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`injectCSSinSVG() injects a <style> element at the end of an <svg> element 1`] = `"<svg><rect x1='1' x2='5'></rect><style>rect {fill: red}</style></svg>"`;
+exports[`injectCSSinSVG() > injects a <style> element at the end of an <svg> element 1`] = `"<svg><rect x1='1' x2='5'></rect><style>rect {fill: red}</style></svg>"`;

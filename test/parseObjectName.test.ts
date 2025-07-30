@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import parseObjectName from "../ai2html/parseObjectName"
 
 it("extracts width and other settings", () => {

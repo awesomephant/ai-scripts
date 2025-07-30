@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import getSymbolClass from "../ai2html/getSymbolClass"
 
 it("works", () => {

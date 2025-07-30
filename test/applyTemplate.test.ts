@@ -1,3 +1,4 @@
+import { expect, it } from "vitest"
 import applyTemplate from "../common/applyTemplate"
 
 it("supports ejs-style annotations, with or without =", function () {

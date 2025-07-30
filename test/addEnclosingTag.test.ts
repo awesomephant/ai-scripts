@@ -1,3 +1,4 @@
+import { expect, it } from "vitest"
 import { addEnclosingTag } from "../common/stringUtils"
 
 it("wraps basic strings", () => {
@@ -9,10 +10,7 @@ it("does nothing when tag already present", () => {
 	const s = addEnclosingTag("script", "<script></script>")
 	expect(s).toBe("<script></script>")
 
-	const s2 = addEnclosingTag(
-		"script",
-		'<script type="text/javascript"></script>'
-	)
+	const s2 = addEnclosingTag("script", '<script type="text/javascript"></script>')
 	expect(s2).toBe('<script type="text/javascript"></script>')
 
 	const s3 = addEnclosingTag("style", "\t<style>\r{body: margin: 0}\r</style>")

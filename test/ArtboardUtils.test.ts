@@ -1,3 +1,5 @@
+import { describe, it, expect, vi } from "vitest"
+
 import { getArtboardResponsiveness, forEachUsableArtboard } from "../ai2html/ArtboardUtils"
 import { mockAiToHtmlSettings, mockArtboard, mockDocument } from "./mock-ai"
 
@@ -21,7 +23,7 @@ describe("getArtboardResponsiveness()", () => {
 
 describe("forEachUsableArtboard()", () => {
 	it("exludes artboards with names starting with '-'", () => {
-		const spy = jest.fn((ab) => {
+		const spy = vi.fn((ab: Artboard) => {
 			return ab.name
 		})
 		const ab1 = mockArtboard({ name: "Artboard 1:600" })

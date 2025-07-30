@@ -24,13 +24,13 @@ function readFile(fpath: string, onerror?: (err: string) => any, enc?: string) {
 		}
 		file.open("r")
 		if (file.error && onerror) {
-			// (on macos) restricted permissions will cause an error here
+			// (on macOS) restricted permissions will cause an error here
 			onerror("Unable to open " + file.fsName + ": [" + file.error + "]")
 			return null
 		}
 		content = file.read()
 		file.close()
-		// (on macos) 'file.length' triggers a file operation that returns -1 if unable to access file
+		// (on macOS) 'file.length' triggers a file operation that returns -1 if unable to access file
 		if (!content && (file.length > 0 || file.length == -1) && onerror) {
 			onerror("Unable to read from " + file.fsName + " (reported size: " + file.length + " bytes)")
 		}

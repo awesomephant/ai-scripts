@@ -3,13 +3,6 @@ import { parseAsArray, trim } from "../common/stringUtils"
 import { straightenCurlyQuotesInsideAngleBrackets } from "../common/stringUtils"
 import { ai2HTMLSettings } from "./types"
 
-// Add ai2html settings from a text block to a settings object
-function parseSettingsEntry(str: string): [string, any] | null {
-	const entryRxp = /^([\w-]+)\s*:\s*(.*)$/
-	const match = entryRxp.exec(trim(str))
-	return match ? [match[1], straightenCurlyQuotesInsideAngleBrackets(match[2])] : null
-}
-
 const legacySettingsValues = {
 	output: {
 		"one-file-for-all-artboards": "one-file",
@@ -19,7 +12,17 @@ const legacySettingsValues = {
 	}
 }
 
-export default function parseSettingsEntries(
+/**
+ * Parse a single line from a settings block
+ */
+function parseSettingsEntry(str: string): [string, string] | null {
+	const entryRxp = /^([\w-]+)\s*:\s*(.*)$/
+	const match = entryRxp.exec(trim(str))
+	return match ? [match[1], straightenCurlyQuotesInsideAngleBrackets(match[2])] : null
+}
+
+// Add ai2html settings from a text block to a settings object
+function parseSettingsEntries(
 	settings: any,
 	entries: string[],
 	onmalformed?: (err: string) => any
@@ -46,3 +49,5 @@ export default function parseSettingsEntries(
 	})
 	return newSettings
 }
+
+export { parseSettingsEntry, parseSettingsEntries }

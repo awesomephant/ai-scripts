@@ -1,3 +1,4 @@
+import { it, expect, vi } from "vitest"
 import replaceSvgIds from "../common/replaceSvgIds"
 
 it("persist known id list", () => {
@@ -24,7 +25,7 @@ it("replaces hex codes", () => {
 })
 
 it("warns on duplicate", () => {
-	const ondupe = jest.fn()
+	const ondupe = vi.fn()
 	const res = replaceSvgIds('id="rect_4_" id="rect_8_"', "", [], ondupe)
 	expect(res).toStrictEqual({
 		svg: 'id="rect" data-name="rect" id="rect-2" data-name="rect"',

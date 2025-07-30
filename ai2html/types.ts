@@ -119,3 +119,33 @@ export interface ai2HTMLSettings {
 	dark_mode_compatible: boolean
 	show_in_compatible_apps: boolean
 }
+
+// We define our own AI Colour types
+
+export interface Color {
+	typename: string
+}
+
+export interface RGBColor extends Color {
+	typename: "RGBColor"
+	red: number
+	blue: number
+	green: number
+}
+
+export interface SpotColor extends Color {
+	typename: "SpotColor"
+	spot: {
+		color: RGBColor | GrayColor | NoColor
+	}
+}
+export interface GrayColor extends Color {
+	typename: "GrayColor"
+	gray: number
+}
+export interface NoColor extends Color {
+	typename: "NoColor"
+}
+export interface CMYKColor extends Color {
+	typename: "CMYKColor"
+}

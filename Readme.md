@@ -11,10 +11,11 @@ Forked from [the NYT version](https://github.com/newsdev/ai2html).
 
 ### Goals
 
-- Maintenance
+- Refactor
   - [x] Use modern Javascript formatting
+  - [ ] Build out Illustration mocks
   - [ ] Use functional programming style
-  - [ ] Use typescript, transpile to es3
+  - [x] Use typescript, transpile to es3
   - [x] Extract NYT-specific code into options (?)
   - [ ] Use hashmaps instead of arrays for typeface etc. lookup tables
   - [ ] Drop legacy options and commented-out code

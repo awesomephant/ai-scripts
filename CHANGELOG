@@ -17,3 +17,4 @@
 - dropped `getArtboardSettings()`, `parseObjectName()` does the same thing
 - dropped `getDocumentSlug()`
 - extracted `makeList()`
+- extracted `formatError()`

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest"
 import { cleanHtmlTags, findHtmlTag, injectCSSinSVG } from "../common/htmlUtils"
 
 describe("cleanHtmlTags()", () => {
@@ -5,7 +6,7 @@ describe("cleanHtmlTags()", () => {
 		expect(cleanHtmlTags("<a href=”#”>link text</a>")).toBe('<a href="#">link text</a>')
 	})
 	it("warns on formatting tags", () => {
-		const ontagfound = jest.fn()
+		const ontagfound = vi.fn()
 		cleanHtmlTags('should <b>error</b>"', ontagfound)
 		expect(ontagfound).toHaveBeenCalled()
 		expect(ontagfound).toHaveBeenCalledWith(

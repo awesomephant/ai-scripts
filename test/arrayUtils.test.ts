@@ -1,3 +1,4 @@
+import { expect, it, describe } from "vitest"
 import { contains } from "../common/arrayUtils"
 
 describe("contains()", function () {

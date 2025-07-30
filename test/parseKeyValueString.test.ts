@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import parseKeyValueString from "../common/parseKeyValueString"
 import initJSON from "../common/json2"
 

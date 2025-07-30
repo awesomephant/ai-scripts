@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
 import { mockArtboard } from "./mock-ai"
 

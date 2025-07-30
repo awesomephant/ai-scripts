@@ -1,3 +1,4 @@
+import { it, expect } from "vitest"
 import darkGrayToBlack from "../common/darkGrayToBlack"
 
 it("turns dark grays to black", () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest"
 import cleanCodeBlock from "../ai2html/cleanCodeBlock"
 
 it("does nothing if mode unknown", function () {

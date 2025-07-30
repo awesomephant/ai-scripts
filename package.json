@@ -1,20 +1,17 @@
 {
 	"name": "ai-scripts",
 	"license": "UNLICENSED",
+	"scripts": {
+		"coverage": "vitest --coverage",
+		"dev": "rollup -w -c",
+		"test": "vitest"
+	},
 	"devDependencies": {
-		"@jest/globals": "^30.0.5",
 		"@rollup/plugin-typescript": "^12.1.4",
-		"@types/jest": "^30.0.0",
-		"@typescript/lib-dom": "npm:@types/web",
-		"jest": "^30.0.5",
-		"ts-jest": "^29.4.0",
+		"@vitest/coverage-v8": "3.2.4",
 		"tslib": "^2.8.1",
 		"types-for-adobe": "^7.2.5",
-		"typescript": "^5.8.3"
-	},
-	"scripts": {
-		"dev": "rollup -w -c",
-		"test": "jest",
-		"coverage": "jest --coverage"
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
 	}
 }
