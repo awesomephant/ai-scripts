@@ -1,6 +1,6 @@
 import { zeroPad } from "./stringUtils"
 
-export default function getDateTimeStamp() {
+export default function getDateTimestamp() {
 	const d = new Date()
 	const year = d.getFullYear()
 	const day = zeroPad(d.getDate(), 2)
