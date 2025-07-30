@@ -100,6 +100,7 @@ import { forEachUsableArtboard, getArtboardResponsiveness } from "./ArtboardUtil
 import makeRgbColor from "../common/makeRgbColor"
 import getDateTimestamp from "../common/getDateTimestamp"
 import formatError from "../common/formatError"
+import extendFontlist from "./extendFontlist"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -113,7 +114,7 @@ function main() {
 	// by a difference between vertical placement in Illustrator (of a system font) and
 	// browsers (of the web font equivalent). vshift values are percentage of font size. //
 	// Positive values correspond to a downward shift.
-	const fonts: FontRule[] = [...defaultFonts]
+	let fonts: FontRule[] = [...defaultFonts]
 
 	const cssPrecision = 4
 
@@ -184,7 +185,7 @@ function main() {
 		docSettings = initDocumentSettings(textBlockData.settings)
 		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName())
 		nameSpace = docSettings.namespace || nameSpace
-		extendFontList(fonts, docSettings.fonts || [])
+		fonts = extendFontlist(fonts, docSettings.fonts || [])
 
 		if (!textBlockData.settings && isTrue(docSettings.create_settings_block)) {
 			createSettingsBlock(docSettings)
@@ -547,10 +548,10 @@ function main() {
 	// Import program settings and custom html, css and js code from specially
 	// formatted text blocks
 	function initSpecialTextBlocks() {
-		var rxp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
-		var settings = null
+		const rxp: RegExp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
+		var settings: Partial<ai2HTMLSettings> = {}
 		var code = {}
-		forEach(doc.textFrames, function (thisFrame: TextFrame) {
+		forEach(doc.textFrames, (thisFrame: TextFrame) => {
 			// var contents = thisFrame.contents; // caused MRAP error in AI 2017
 			var type = null
 			var match, lines
@@ -646,12 +647,12 @@ function main() {
 		}
 	}
 
-	function extendSettings(settings, moreSettings) {
+	function extendSettings(settings: Partial<ai2HTMLSettings>, moreSettings: Partial<ai2HTMLSettings>) {
 		var tmp = settings.fonts || []
 		extend(settings, moreSettings)
 		// merge fonts, don't replace them
 		if (moreSettings.fonts) {
-			extendFontList(tmp, moreSettings.fonts)
+			tmp = extendFontlist(tmp, moreSettings.fonts)
 		}
 		settings.fonts = tmp
 	}
@@ -680,19 +681,7 @@ function main() {
 		return o
 	}
 
-	function extendFontList(a, b) {
-		var index = {}
-		forEach(a, function (o, i) {
-			index[o.aifont] = i
-		})
-		forEach(b, function (o) {
-			if (o.aifont && o.aifont in index) {
-				a[index[o.aifont]] = o // replace
-			} else {
-				a.push(o) // add
-			}
-		})
-	}
+
 
 	function createSettingsBlock(settings: ai2HTMLSettings) {
 		const bounds = getAllArtboardBounds(doc.artboards)
@@ -1451,9 +1440,9 @@ function main() {
 			if (range.aiStyle.aifont && !range.cssStyle["font-family"]) {
 				warnOnce(
 					"Missing a rule for converting font: " +
-						range.aiStyle.aifont +
-						". Sample text: " +
-						truncateString(range.text, 35),
+					range.aiStyle.aifont +
+					". Sample text: " +
+					truncateString(range.text, 35),
 					range.aiStyle.aifont
 				)
 			}
@@ -1779,7 +1768,7 @@ function main() {
 		if (scaleX != 100 || scaleY != 100) {
 			warn(
 				"Vertical or horizontal text scaling will be lost. Affected text: " +
-					truncateString(textFrame.contents, 35)
+				truncateString(textFrame.contents, 35)
 			)
 		}
 
@@ -2632,8 +2621,8 @@ function main() {
 		if (formats[0] != "auto" && formats[0] != "jpg" && artboardContainsVisibleRasterImage(ab)) {
 			warnOnce(
 				"An artboard contains a raster image -- consider exporting to jpg instead of " +
-					formats[0] +
-					"."
+				formats[0] +
+				"."
 			)
 		}
 
@@ -2731,8 +2720,8 @@ function main() {
 		if (pixels > warnThreshold) {
 			warn(
 				"An output image contains ~" +
-					Math.round(pixels / 1e6) +
-					" million pixels -- this may cause problems on mobile devices"
+				Math.round(pixels / 1e6) +
+				" million pixels -- this may cause problems on mobile devices"
 			)
 		}
 		return k
@@ -2782,8 +2771,8 @@ function main() {
 				imageScale = MAX_JPG_SCALE
 				warn(
 					imgPath.split("/").pop() +
-						" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
-						" If the file needs to be larger, change the image format to png which does not appear to have limits."
+					" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
+					" If the file needs to be larger, change the image format to png which does not appear to have limits."
 				)
 			}
 			fileType = ExportType.JPEG
@@ -2824,8 +2813,8 @@ function main() {
 	//   smaller SVG output.
 	function copyArtboardForImageExport(ab, masks, items) {
 		var layerMasks = filter(masks, function (o) {
-				return !!o.layer
-			}),
+			return !!o.layer
+		}),
 			artboardBounds = ab.artboardRect,
 			sourceItems = items || toArray(doc.layers),
 			destLayer = doc.layers.add(),
