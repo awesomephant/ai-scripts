@@ -101,6 +101,7 @@ import makeRgbColor from "../common/makeRgbColor"
 import getDateTimestamp from "../common/getDateTimestamp"
 import formatError from "../common/formatError"
 import updateSettingsEntry from "./updateSettingsEntry"
+import extendFontlist from "./extendFontlist"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -114,7 +115,7 @@ function main() {
 	// by a difference between vertical placement in Illustrator (of a system font) and
 	// browsers (of the web font equivalent). vshift values are percentage of font size. //
 	// Positive values correspond to a downward shift.
-	const fonts: FontRule[] = [...defaultFonts]
+	let fonts: FontRule[] = [...defaultFonts]
 
 	const cssPrecision = 4
 
@@ -185,7 +186,7 @@ function main() {
 		docSettings = initDocumentSettings(textBlockData.settings)
 		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName())
 		nameSpace = docSettings.namespace || nameSpace
-		extendFontList(fonts, docSettings.fonts || [])
+		fonts = extendFontlist(fonts, docSettings.fonts || [])
 
 		if (!textBlockData.settings && isTrue(docSettings.create_settings_block)) {
 			createSettingsBlock(docSettings)
@@ -548,10 +549,10 @@ function main() {
 	// Import program settings and custom html, css and js code from specially
 	// formatted text blocks
 	function initSpecialTextBlocks() {
-		var rxp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
-		var settings = null
+		const rxp: RegExp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
+		var settings: Partial<ai2HTMLSettings> = {}
 		var code = {}
-		forEach(doc.textFrames, function (thisFrame: TextFrame) {
+		forEach(doc.textFrames, (thisFrame: TextFrame) => {
 			// var contents = thisFrame.contents; // caused MRAP error in AI 2017
 			var type = null
 			var match, lines
@@ -647,12 +648,15 @@ function main() {
 		}
 	}
 
-	function extendSettings(settings, moreSettings) {
+	function extendSettings(
+		settings: Partial<ai2HTMLSettings>,
+		moreSettings: Partial<ai2HTMLSettings>
+	) {
 		var tmp = settings.fonts || []
 		extend(settings, moreSettings)
 		// merge fonts, don't replace them
 		if (moreSettings.fonts) {
-			extendFontList(tmp, moreSettings.fonts)
+			tmp = extendFontlist(tmp, moreSettings.fonts)
 		}
 		settings.fonts = tmp
 	}
@@ -679,20 +683,6 @@ function main() {
 			warn("Error reading settings file " + path + ": [" + e.message + "]")
 		}
 		return o
-	}
-
-	function extendFontList(a, b) {
-		var index = {}
-		forEach(a, function (o, i) {
-			index[o.aifont] = i
-		})
-		forEach(b, function (o) {
-			if (o.aifont && o.aifont in index) {
-				a[index[o.aifont]] = o // replace
-			} else {
-				a.push(o) // add
-			}
-		})
 	}
 
 	function createSettingsBlock(settings: ai2HTMLSettings) {
