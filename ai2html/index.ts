@@ -82,7 +82,7 @@ import { formatCssRule, formatCssColor } from "../common/cssUtils"
 import { findHtmlTag, cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import getSymbolClass from "./getSymbolClass"
 import { parseYaml } from "../common/yamlUtils"
-import type { ai2HTMLSettings, FontRule, ImageFormat } from "./types"
+import type { ai2HTMLSettings, FontRule, ImageFormat, RasterExportOptions } from "./types"
 import makeResizerScript from "./makeResizerScript"
 import cleanCodeBlock from "./cleanCodeBlock"
 import { parseSettingsEntries, parseSettingsEntry } from "./parseSettingsEntries"
@@ -97,12 +97,16 @@ import {
 import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
 import {
+	findLargestArtboardIndex,
+	findUsableArtboards,
 	forEachUsableArtboard,
 	getArtboardName,
 	getArtboardResponsiveness,
+	getArtboardWidth,
 	getGroupContainerId,
 	getLayerName,
 	getRawDocumentName,
+	getWidthRangeForConfig,
 	makeDocumentSlug
 } from "./ArtboardUtils"
 import makeRgbColor from "../common/makeRgbColor"
@@ -110,6 +114,10 @@ import getDateTimestamp from "../common/getDateTimestamp"
 import formatError from "../common/formatError"
 import updateSettingsEntry from "./updateSettingsEntry"
 import extendFontlist from "./extendFontlist"
+import getSortedArtboardInfo from "./getSortedArtboardInfo"
+import { getOutputImagePixelRatio } from "./RasterUtils"
+import getCommonOutputSettings from "./getCommonOutputSettings"
+import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -268,7 +276,7 @@ function main() {
 		} else if (isTrue(settings.create_config_file)) {
 			// Create one top-level config.yml file
 			var yamlPath = docPath + (settings.config_file_path || "config.yml"),
-				yamlStr = generateYamlFileContent(settings)
+				yamlStr = nyt_generateScoopYaml(settings, doc, scriptVersion, JSON)
 			checkForOutputFolder(yamlPath.replace(/[^\/]+$/, ""), "configFileFolder")
 			saveTextFile(yamlPath, yamlStr)
 		}
@@ -784,12 +792,6 @@ function main() {
 		return docSlug + "-" + getArtboardName(ab)
 	}
 
-	// return the effective width of an artboard (the actual width, overridden by optional setting)
-	function getArtboardWidth(ab: Artboard) {
-		var abSettings = parseObjectName(ab.name)
-		return abSettings.width || aiBoundsToRect(ab.artboardRect).width
-	}
-
 	// get range of container widths that an ab is visible as a [min,max] array
 	// smallest artboard starts with 0, largest artboard ends with Infinity
 	// values are inclusive and rounded
@@ -820,62 +822,8 @@ function main() {
 		return visibleRange
 	}
 
-	// Get [min, max] width range for the graphic (for optional config.yml output)
-	function getWidthRangeForConfig(settings) {
-		var info = getSortedArtboardInfo(findUsableArtboards(), settings)
-		var minAB = info[0]
-		var maxAB = info[info.length - 1]
-		var min, max
-		if (!minAB || !maxAB) return [0, 0]
-		min = settings.min_width || minAB.effectiveWidth
-		if (maxAB.responsiveness == "dynamic") {
-			max = settings.max_width || Math.max(maxAB.effectiveWidth, 1600)
-		} else {
-			max = maxAB.effectiveWidth
-		}
-		return [min, max]
-	}
-
-	// return array of data records about each artboard, sorted from narrow to wide
-	function getSortedArtboardInfo(artboards, settings: ai2HTMLSettings) {
-		var arr = []
-		forEach(artboards, function (ab) {
-			arr.push({
-				effectiveWidth: getArtboardWidth(ab),
-				responsiveness: getArtboardResponsiveness(ab, settings)
-			})
-		})
-		arr.sort(function (a, b) {
-			return a.effectiveWidth - b.effectiveWidth
-		})
-		return arr
-	}
-
-	function findUsableArtboards() {
-		var arr = []
-		forEachUsableArtboard(doc, (ab) => {
-			arr.push(ab)
-		})
-		return arr
-	}
-
 	function findArtboardIndex(ab: Artboard) {
 		return indexOf(doc.artboards, ab)
-	}
-
-	// Returns id of artboard with largest area (for promo image)
-	function findLargestArtboard() {
-		var largestId = -1
-		var largestArea = 0
-		forEachUsableArtboard(doc, (ab, i) => {
-			var info = aiBoundsToRect(ab.artboardRect)
-			var area = info.width * info.height
-			if (area > largestArea) {
-				largestId = i
-				largestArea = area
-			}
-		})
-		return largestId
 	}
 
 	function findLayers(layers, test) {
@@ -2568,7 +2516,7 @@ function main() {
 	// ab: the active artboard
 	function captureArtboardImage(imgName, ab: Artboard, masks, settings) {
 		var formats = settings.image_format
-		var imgHtml
+		var imgHtml: string
 
 		// This test can be expensive... consider enabling the empty artboard test only if an option is set.
 		// if (testEmptyArtboard(ab)) return '';
@@ -2646,7 +2594,7 @@ function main() {
 
 	// Create a promo image from the largest usable artboard
 	function createPromoImage(settings: ai2HTMLSettings) {
-		var abIndex = findLargestArtboard()
+		var abIndex = findLargestArtboardIndex(doc)
 		if (abIndex == -1) return // TODO: show error
 		var ab = doc.artboards[abIndex],
 			format = getPromoImageFormat(ab, settings),
@@ -2663,46 +2611,26 @@ function main() {
 		alert("Promo image created\nLocation: " + outputPath)
 	}
 
-	// Returns 1 or 2 (corresponding to standard pixel scale and 'retina' pixel scale)
-	// format: png, png24 or jpg
-	// doubleres: true/false ('always' option has been removed)
-	// NOTE: this function used to force single-res for png images > 3 megapixels,
-	//   because of resource limits on early iphones. This rule has been changed
-	//   to a warning and the limit increased.
-	function getOutputImagePixelRatio(
-		width: number,
-		height: number,
-		format: ImageFormat,
-		doubleres: string | boolean
-	) {
-		var k = isTrue(doubleres) ? 2 : 1
-		// thresholds may be obsolete
-		var warnThreshold = format == "jpg" ? 32 * 1024 * 1024 : 5 * 1024 * 1024 // jpg and png
-		var pixels = width * height * k * k
-		if (pixels > warnThreshold) {
-			warn(
-				"An output image contains ~" +
-					Math.round(pixels / 1e6) +
-					" million pixels -- this may cause problems on mobile devices"
-			)
-		}
-		return k
-	}
-
 	// Exports contents of active artboard as an image (without text, unless in test mode)
 	// imgPath: full path of output file
 	// ab: assumed to be active artboard
 	// format: png, png24, jpg
-
+	interface exportRasterOptions {
+		image_width: number
+		use_2x_images_if_possible: boolean
+		png_transparent: boolean
+		png_number_of_colors: number
+		jpg_quality: number
+	}
 	function exportRasterImage(
 		imgPath: string,
 		ab: Artboard,
 		format: ImageFormat,
-		settings: ai2HTMLSettings
+		settings: exportRasterOptions
 	) {
 		// This constant is specified: in the Illustrator Scripting Reference under ExportOptionsJPEG.
-		var MAX_JPG_SCALE = 776.19
-		var abPos = aiBoundsToRect(ab.artboardRect)
+		const MAX_JPG_SCALE = 776.19
+		const abPos = aiBoundsToRect(ab.artboardRect)
 		var imageScale, exportOptions, fileType
 
 		if (settings.image_width) {
@@ -2715,7 +2643,8 @@ function main() {
 					abPos.width,
 					abPos.height,
 					format,
-					settings.use_2x_images_if_possible
+					isTrue(settings.use_2x_images_if_possible),
+					warn
 				)
 		}
 
@@ -2804,7 +2733,7 @@ function main() {
 		destLayer.remove()
 		return doc2 || null
 
-		function copyLayer(lyr) {
+		function copyLayer(lyr: Layer) {
 			var mask
 			if (lyr.hidden) return // ignore hidden layers
 			mask = findLayerMask(lyr)
@@ -2839,7 +2768,7 @@ function main() {
 		// TODO: locked objects in masked layer may not be included in mask.items array
 		//   consider traversing layer in this function ...
 		//   make sure doubly masked objects aren't copied twice
-		function copyMaskedLayerAsGroup(lyr, mask) {
+		function copyMaskedLayerAsGroup(lyr: Layer, mask) {
 			var maskBounds = mask.mask.geometricBounds
 			var newMask, newGroup
 			if (!boundsIntersect(artboardBounds, maskBounds)) {
@@ -2887,7 +2816,7 @@ function main() {
 			}
 		}
 
-		function findLayerMask(lyr) {
+		function findLayerMask(lyr: Layer) {
 			return find(layerMasks, function (o) {
 				return o.layer == lyr
 			})
@@ -3099,7 +3028,7 @@ function main() {
 	}
 
 	// Get CSS styles that are common to all generated content
-	function generatePageCss(containerId, group, settings) {
+	function generatePageCss(containerId: string, group, settings) {
 		var css = ""
 		var blockStart = "#" + containerId
 
@@ -3169,20 +3098,8 @@ function main() {
 		return css
 	}
 
-	function getCommonOutputSettings(settings: ai2HTMLSettings) {
-		var range = getWidthRangeForConfig(settings)
-		return {
-			ai2html_version: scriptVersion,
-			project_type: "ai2html",
-			min_width: range[0],
-			max_width: range[1],
-			tags: "ai2html",
-			type: "embeddedinteractive"
-		}
-	}
-
 	function generateJsonSettingsFileContent(settings: ai2HTMLSettings) {
-		var o = getCommonOutputSettings(settings)
+		var o = getCommonOutputSettings(settings, doc, scriptVersion)
 		forEach(settings.config_file, (key) => {
 			var val = String(settings[key])
 			if (isTrue(val)) val = true
@@ -3190,42 +3107,6 @@ function main() {
 			o[key] = val
 		})
 		return JSON.stringify(o, null, 2)
-	}
-
-	// Create a settings file (optimized for the NYT Scoop CMS)
-	function generateYamlFileContent(settings: ai2HTMLSettings) {
-		var o = getCommonOutputSettings(settings)
-		var lines = []
-		lines.push("ai2html_version: " + scriptVersion)
-		if (settings.project_type) {
-			lines.push("project_type: " + settings.project_type)
-		}
-		lines.push("type: " + o.type)
-		lines.push("tags: " + o.tags)
-		lines.push("min_width: " + o.min_width)
-		lines.push("max_width: " + o.max_width)
-		if (isTrue(settings.dark_mode_compatible)) {
-			// kludge to output YAML array value for one setting
-			lines.push("display_overrides:\n  - DARK_MODE_COMPATIBLE")
-		}
-
-		forEach(settings.config_file, function (key) {
-			var value = trim(String(settings[key]))
-			var useQuotes = value === "" || /\s/.test(value)
-			if (key == "show_in_compatible_apps") {
-				// special case: this setting takes quoted 'yes' or 'no'
-				useQuotes = true // assuming value is 'yes' or 'no';
-				value = isTrue(value) ? "yes" : "no"
-			}
-			if (useQuotes) {
-				value = JSON.stringify(value) // wrap in quotes and escape internal quotes
-			} else if (isTrue(value) || isFalse(value)) {
-				// use standard values for boolean settings
-				value = isTrue(value) ? "true" : "false"
-			}
-			lines.push(key + ": " + value)
-		})
-		return lines.join("\n")
 	}
 
 	// Write an HTML page to a file for NYT Preview

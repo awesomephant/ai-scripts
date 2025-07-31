@@ -1,21 +1,12 @@
 import { ai2HTMLSettings } from "./types"
+import { getWidthRangeForConfig } from "./ArtboardUtils"
 
-function getWidthRangeForConfig(settings: ai2HTMLSettings): [number, number] {
-	var info = getSortedArtboardInfo(findUsableArtboards(), settings)
-	var minAB = info[0]
-	var maxAB = info[info.length - 1]
-	var min, max
-	if (!minAB || !maxAB) return [0, 0]
-	min = settings.min_width || minAB.effectiveWidth
-	if (maxAB.responsiveness == "dynamic") {
-		max = settings.max_width || Math.max(maxAB.effectiveWidth, 1600)
-	} else {
-		max = maxAB.effectiveWidth
-	}
-	return [min, max]
-}
-export default function getCommonOutputSettings(settings: ai2HTMLSettings, scriptVersion: string) {
-	var range = getWidthRangeForConfig(settings)
+export default function getCommonOutputSettings(
+	settings: ai2HTMLSettings,
+	doc: Document,
+	scriptVersion: string
+) {
+	const range = getWidthRangeForConfig(settings, doc)
 	return {
 		ai2html_version: scriptVersion,
 		project_type: "ai2html",

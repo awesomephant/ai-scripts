@@ -1,7 +1,9 @@
+import { forEach } from "../common/arrayUtils"
+import { aiBoundsToRect } from "../common/geometryUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
 import parseObjectName from "./parseObjectName"
-import { ai2HTMLSettings } from "./types"
+import { ai2HTMLSettings, ArtboardInfo } from "./types"
 
 // Calls cb for every artboard in doc except those with names starting w/ "-"
 function forEachUsableArtboard(doc: Document, cb: (ab: Artboard, i: number) => any) {
@@ -13,6 +15,10 @@ function forEachUsableArtboard(doc: Document, cb: (ab: Artboard, i: number) => a
 	}
 }
 
+/**
+ * Returns an artboard's responsiveness setting or the global
+ * responsiveness setting contained in the settings parameter
+ */
 function getArtboardResponsiveness(ab: Artboard, settings: ai2HTMLSettings) {
 	var opts = parseObjectName(ab.name)
 	if (opts.dynamic) return "dynamic" // ab name has ":dynamic" appended
@@ -40,13 +46,83 @@ function getRawDocumentName(doc: Document) {
 function getGroupContainerId(namespace: string, groupName: string) {
 	return namespace + groupName + "-box"
 }
+function findUsableArtboards(doc: Document) {
+	var arr: Artboard[] = []
+	forEachUsableArtboard(doc, (ab) => {
+		arr.push(ab)
+	})
+	return arr
+}
+
+/**
+ * Return array of data records about each artboard, sorted from narrow to wide
+ */
+function getSortedArtboardInfo(artboards: Artboard[], settings: ai2HTMLSettings) {
+	let res: ArtboardInfo[] = []
+	forEach(artboards, function (ab) {
+		res.push({
+			effectiveWidth: getArtboardWidth(ab),
+			responsiveness: getArtboardResponsiveness(ab, settings)
+		})
+	})
+	res.sort((a, b) => {
+		return a.effectiveWidth - b.effectiveWidth
+	})
+	return res
+}
+
+/**
+ * return the effective width of an artboard (the actual width, overridden by optional setting)
+ */
+function getArtboardWidth(ab: Artboard): number {
+	var abSettings = parseObjectName(ab.name)
+	return abSettings.width || aiBoundsToRect(ab.artboardRect).width
+}
+
+/**
+ * Returns index of artboard with largest area (for promo image)
+ */
+function findLargestArtboardIndex(doc: Document) {
+	let largestIdx = -1
+	let largestArea = 0
+	forEachUsableArtboard(doc, (ab, i) => {
+		const info = aiBoundsToRect(ab.artboardRect)
+		const area = info.width * info.height
+		if (area > largestArea) {
+			largestIdx = i
+			largestArea = area
+		}
+	})
+	return largestIdx
+}
+
+// Get [min, max] width range for the graphic (for optional config.yml output)
+function getWidthRangeForConfig(settings: ai2HTMLSettings, doc: Document): [number, number] {
+	const info = getSortedArtboardInfo(findUsableArtboards(doc), settings)
+	const minAB = info[0]
+	const maxAB = info[info.length - 1]
+	let min, max
+	if (!minAB || !maxAB) return [0, 0]
+	min = settings.min_width || minAB.effectiveWidth
+	if (maxAB.responsiveness == "dynamic") {
+		max = settings.max_width || Math.max(maxAB.effectiveWidth, 1600)
+	} else {
+		max = maxAB.effectiveWidth
+	}
+	return [min, max]
+}
 
 export {
+	findUsableArtboards,
 	forEachUsableArtboard,
-	getArtboardResponsiveness,
 	getArtboardName,
+	getArtboardResponsiveness,
+	getArtboardWidth,
+	getGroupContainerId,
 	getLayerName,
-	makeDocumentSlug,
 	getRawDocumentName,
-	getGroupContainerId
+	makeDocumentSlug,
+	getSortedArtboardInfo,
+	findLargestArtboardIndex,
+	getWidthRangeForConfig
 }

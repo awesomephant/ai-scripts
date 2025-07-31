@@ -1,7 +1,28 @@
 import { describe, it, expect, vi } from "vitest"
 
-import { getArtboardResponsiveness, forEachUsableArtboard } from "../ai2html/ArtboardUtils"
+import {
+	getArtboardResponsiveness,
+	forEachUsableArtboard,
+	getArtboardWidth
+} from "../ai2html/ArtboardUtils"
+import _Artboard from "./__mocks__/Artboard"
+
 import { mockAiToHtmlSettings, mockArtboard, mockDocument } from "./mock-ai"
+
+describe("getArtboardWidth()", () => {
+	it("measures the width", () => {
+		const ab = new _Artboard("Artboard 1", [0, 0, 100, 100]) // 100x100
+		expect(getArtboardWidth(ab)).toBe(100)
+	})
+	it("uses width setting if present", () => {
+		const ab = new _Artboard("Artboard 1:300", [0, 0, 100, 100]) // 100x100
+		expect(getArtboardWidth(ab)).toBe(300)
+	})
+	it("ignores other settings", () => {
+		const ab = new _Artboard("Artboard 12:500,fixed Layer 1:svg", [0, 0, 100, 100]) // 100x100
+		expect(getArtboardWidth(ab)).toBe(500)
+	})
+})
 
 describe("getArtboardResponsiveness()", () => {
 	it("detects fixed layout", () => {

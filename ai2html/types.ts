@@ -13,6 +13,10 @@ export interface ArtboardGroupForOutput {
 	groupName: string
 	artboards: Artboard[]
 }
+export interface ArtboardInfo {
+	effectiveWidth: number
+	responsiveness: string
+}
 
 export type SettingsTextBlockMode =
 	| "css"
@@ -110,7 +114,11 @@ export interface ai2HTMLSettings {
 	 * List of settings to include in the "ai2html-settings" text block
 	 */
 	settings_block: (keyof ai2HTMLSettings)[]
+	/**
+	 * List of settings to include in settings YAML file
+	 */
 	config_file: (keyof ai2HTMLSettings)[]
+	min_width: number
 
 	/**
 	 * NYT-specific
