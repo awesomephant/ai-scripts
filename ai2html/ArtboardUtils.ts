@@ -120,6 +120,14 @@ function getDocumentArtboardName(ab: Artboard, docSlug: string) {
 	return docSlug + "-" + getArtboardName(ab)
 }
 
+function calcProgressBarSteps(doc: Document): number {
+	var n = 0
+	forEachUsableArtboard(doc, () => {
+		n += 2
+	})
+	return n
+}
+
 // create temp document (takes ~1.5s)
 function makeTmpDocument(doc: Document, ab: Artboard) {
 	const artboardBounds = ab.artboardRect
@@ -148,5 +156,6 @@ export {
 	getWidthRangeForConfig,
 	clearMatrixShift,
 	makeTmpDocument,
-	getDocumentArtboardName
+	getDocumentArtboardName,
+	calcProgressBarSteps
 }

@@ -32,7 +32,7 @@ import {
 	some,
 	toArray
 } from "../common/arrayUtils"
-import { isFalse, isTrue } from "../common/booleanUtils"
+import { isTrue } from "../common/booleanUtils"
 import { formatCssRule } from "../common/cssUtils"
 import {
 	checkForOutputFolder,
@@ -57,6 +57,7 @@ import getDateTimestamp from "../common/getDateTimestamp"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
+import { unhideLayer, layerIsChildOf } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
@@ -72,6 +73,7 @@ import {
 	truncateString
 } from "../common/stringUtils"
 import {
+	calcProgressBarSteps,
 	clearMatrixShift,
 	findLargestArtboardIndex,
 	forEachUsableArtboard,
@@ -97,7 +99,7 @@ import {
 } from "./constants"
 import extendFontlist from "./extendFontlist"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
-import getCommonOutputSettings from "./getCommonOutputSettings"
+import generatePageCss from "./generatePageCss"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
 import makeResizerScript from "./makeResizerScript"
@@ -200,7 +202,7 @@ function main() {
 
 		progressWindow = new ProgressWindow({
 			name: "ai2html progress",
-			steps: calcProgressBarSteps()
+			steps: calcProgressBarSteps(doc)
 		})
 
 		validateArtboardNames(docSettings) // warn about duplicate artboard names
@@ -283,7 +285,12 @@ function main() {
 		js: string
 		css: string
 	}
-	function renderArtboardGroup(group, masks, settings: ai2HTMLSettings, textBlockContent) {
+	function renderArtboardGroup(
+		group: ArtboardGroupForOutput,
+		masks,
+		settings: ai2HTMLSettings,
+		textBlockContent
+	) {
 		const output: outputData = { html: "", js: "", css: "" }
 
 		forEach(group.artboards, (activeArtboard: Artboard) => {
@@ -372,18 +379,6 @@ function main() {
 		addTextBlockContent(output, textBlockContent)
 		generateOutputHtml(output, group, settings)
 	} // end render()
-
-	// =====================================
-	// ai2html specific utility functions
-	// =====================================
-
-	function calcProgressBarSteps(): number {
-		var n = 0
-		forEachUsableArtboard(doc, () => {
-			n += 2
-		})
-		return n
-	}
 
 	// display debugging message in completion alert box
 	// (in debug mode)
@@ -733,7 +728,11 @@ function main() {
 	// values are inclusive and rounded
 	// example: [0, 599]  [600, Infinity]
 	//
-	function getArtboardVisibilityRange(ab, group, settings) {
+	function getArtboardVisibilityRange(
+		ab: Artboard,
+		group: ArtboardGroupForOutput,
+		settings: ai2HTMLSettings
+	) {
 		var thisWidth = getArtboardWidth(ab)
 		var minWidth, nextWidth
 		// find widths of smallest ab and next widest ab (if any)
@@ -748,7 +747,11 @@ function main() {
 	}
 
 	// Get range of widths that an ab can be sized
-	function getArtboardWidthRange(ab, group, settings) {
+	function getArtboardWidthRange(
+		ab: Artboard,
+		group: ArtboardGroupForOutput,
+		settings: ai2HTMLSettings
+	) {
 		var responsiveness = getArtboardResponsiveness(ab, settings)
 		var w = getArtboardWidth(ab)
 		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
@@ -784,22 +787,6 @@ function main() {
 		// converted to HTML from bottom to top
 		retn.reverse()
 		return retn
-	}
-
-	function unhideLayer(lyr) {
-		while (lyr.typename == "Layer") {
-			lyr.visible = true
-			lyr = lyr.parent
-		}
-	}
-
-	function layerIsChildOf(lyr, lyr2) {
-		if (lyr == lyr2) return false
-		while (lyr.typename == "Layer") {
-			if (lyr == lyr2) return true
-			lyr = lyr.parent
-		}
-		return false
 	}
 
 	function clearSelection() {
@@ -2926,90 +2913,19 @@ function main() {
 		return css
 	}
 
-	// Get CSS styles that are common to all generated content
-	function generatePageCss(
-		containerId: string,
-		group: ArtboardGroupForOutput,
+	// Write an HTML page to a file for NYT Preview
+	function outputLocalPreviewPage(
+		textForFile: string,
+		localPreviewDestination: string,
 		settings: ai2HTMLSettings
 	) {
-		var css = ""
-		var blockStart = "#" + containerId
-
-		if (isTrue(settings.include_resizer_css) && group.artboards.length > 1) {
-			css += formatCssRule(blockStart, {
-				"container-type": "inline-size",
-				"container-name": containerId
-			})
-		}
-
-		if (settings.max_width) {
-			css += formatCssRule(blockStart, {
-				"max-width": settings.max_width + "px"
-			})
-		}
-
-		if (isTrue(settings.center_html_output)) {
-			css += formatCssRule(blockStart + ",\r" + blockStart + " ." + nameSpace + "artboard", {
-				margin: "0 auto"
-			})
-		}
-
-		if (settings.alt_text) {
-			css += formatCssRule(blockStart + " ." + nameSpace + "aiAltText", {
-				position: "absolute",
-				left: "-10000px",
-				width: "1px",
-				height: "1px",
-				overflow: "hidden",
-				"white-space": "nowrap"
-			})
-		}
-
-		if (settings.clickable_link !== "") {
-			css += formatCssRule(blockStart + " ." + nameSpace + "ai2htmlLink", {
-				display: "block"
-			})
-		}
-
-		// default <p> styles
-		css += formatCssRule(blockStart + " p", { margin: "0" })
-		if (isTrue(settings.testing_mode)) {
-			css += formatCssRule(blockStart + " p", {
-				color: "rgba(209, 0, 0, 0.5) !important"
-			})
-		}
-
-		css += formatCssRule(blockStart + " ." + nameSpace + "aiAbs", {
-			position: "absolute"
-		})
-
-		css += formatCssRule(blockStart + " ." + nameSpace + "aiImg", {
-			position: "absolute",
-			top: "0",
-			display: "block",
-			width: "100% !important"
-		})
-
-		css += formatCssRule(blockStart + " ." + getSymbolClass(nameSpace), {
-			position: "absolute",
-			"box-sizing": "border-box"
-		})
-
-		css += formatCssRule(blockStart + " ." + nameSpace + "aiPointText p", {
-			"white-space": "nowrap"
-		})
-		return css
-	}
-
-	// Write an HTML page to a file for NYT Preview
-	function outputLocalPreviewPage(textForFile, localPreviewDestination, settings: ai2HTMLSettings) {
 		var localPreviewTemplateText = readTextFile(docPath + settings.local_preview_template)
 		settings.ai2htmlPartial = textForFile // TODO: don't modify global settings this way
 		var localPreviewHtml = applyTemplate(localPreviewTemplateText, settings)
 		saveTextFile(localPreviewDestination, localPreviewHtml)
 	}
 
-	function addTextBlockContent(output, content) {
+	function addTextBlockContent(output: outputData, content) {
 		if (content.css) {
 			output.css += "\r/* Custom CSS */\r" + content.css.join("\r") + "\r"
 		}
@@ -3104,13 +3020,12 @@ function main() {
 		// CSS
 		css =
 			'<style media="screen,print">\r' +
-			generatePageCss(containerId, group, settings) +
+			generatePageCss(containerId, group, settings, nameSpace) +
 			content.css +
 			"\r</style>\r"
 
 		// JS
 		js = content.js + responsiveJs
-
 		textForFile =
 			"\r" +
 			commentBlock +

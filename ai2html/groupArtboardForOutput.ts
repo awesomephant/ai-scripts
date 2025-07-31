@@ -11,7 +11,6 @@ export default function groupArtboardsForOutput(
 	let groups: ArtboardGroupForOutput[] = []
 
 	forEachUsableArtboard(doc, (ab: Artboard) => {
-		let group: ArtboardGroupForOutput | null
 		let groupName: string
 		if (settings.output == "one-file") {
 			// single-file output: artboards share a single group
