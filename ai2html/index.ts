@@ -16,14 +16,8 @@ limitations under the License.*/
 
 // SR: https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
 
-import {
-	align,
-	blendModes,
-	caps,
-	cssTextStyleProperties,
-	defaultFonts,
-	defaultSettings
-} from "./constants"
+import aiColorToCss from "../common/aiColorToCss"
+import applyTemplate from "../common/applyTemplate"
 import {
 	arraySubtract,
 	contains,
@@ -32,73 +26,52 @@ import {
 	find,
 	firstBy,
 	forEach,
-	forEachProperty,
-	map,
 	indexOf,
+	map,
 	objectDiff,
 	some,
 	toArray
 } from "../common/arrayUtils"
-import initJSON from "../common/json2"
-import T from "../common/timer"
-import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
+import { isFalse, isTrue } from "../common/booleanUtils"
+import { formatCssRule } from "../common/cssUtils"
 import {
-	addEnclosingTag,
-	cleanHtmlText,
-	encodeHtmlEntities,
-	makeKeyword,
-	replaceChars,
-	straightenCurlyQuotes,
-	straightenCurlyQuotesInsideAngleBrackets,
-	stringToLines,
-	stripTag,
-	trim,
-	truncateString,
-	zeroPad,
-	parseAsArray,
-	stripSettingsFileComments,
-	makeList
-} from "../common/stringUtils"
-import {
-	fileExists,
-	folderExists,
 	deleteFile,
-	pathSplit,
-	pathJoin,
-	readTextFile,
-	saveTextFile,
+	fileExists,
 	getScriptDirectory,
-	readFile
+	pathJoin,
+	pathSplit,
+	readFile,
+	readTextFile,
+	saveTextFile
 } from "../common/fileUtils"
-import { isTrue, isFalse } from "../common/booleanUtils"
-import ProgressWindow from "../common/ProgressWindow"
-import parseObjectName from "./parseObjectName"
-import cleanObjectName from "./cleanObjectName"
-import parseKeyValueString from "../common/parseKeyValueString"
-import parseDataAttributes from "./parseDataAttributes"
-import uniqAssetName from "./uniqAssetName"
-import compareVersions from "../common/compareVersions"
-import { formatCssRule, formatCssColor } from "../common/cssUtils"
-import { findHtmlTag, cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
-import getSymbolClass from "./getSymbolClass"
-import { parseYaml } from "../common/yamlUtils"
-import type { ai2HTMLSettings, FontRule, ImageFormat, RasterExportOptions } from "./types"
-import makeResizerScript from "./makeResizerScript"
-import cleanCodeBlock from "./cleanCodeBlock"
-import { parseSettingsEntries, parseSettingsEntry } from "./parseSettingsEntries"
-import roundTo from "../common/roundTo"
-import applyTemplate from "../common/applyTemplate"
+import formatError from "../common/formatError"
 import {
 	aiBoundsToRect,
 	boundsAreSimilar,
 	boundsIntersect,
 	shiftBounds
 } from "../common/geometryUtils"
-import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
+import getDateTimestamp from "../common/getDateTimestamp"
+import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
+import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
+import initJSON from "../common/json2"
+import makeRgbColor from "../common/makeRgbColor"
+import ProgressWindow from "../common/ProgressWindow"
+import roundTo from "../common/roundTo"
 import {
+	cleanHtmlText,
+	encodeHtmlEntities,
+	makeKeyword,
+	makeList,
+	stringToLines,
+	stripSettingsFileComments,
+	trim,
+	truncateString
+} from "../common/stringUtils"
+import {
+	clearMatrixShift,
 	findLargestArtboardIndex,
-	findUsableArtboards,
 	forEachUsableArtboard,
 	getArtboardName,
 	getArtboardResponsiveness,
@@ -106,18 +79,30 @@ import {
 	getGroupContainerId,
 	getLayerName,
 	getRawDocumentName,
-	getWidthRangeForConfig,
+	getSortedArtboardInfo,
 	makeDocumentSlug
 } from "./ArtboardUtils"
-import makeRgbColor from "../common/makeRgbColor"
-import getDateTimestamp from "../common/getDateTimestamp"
-import formatError from "../common/formatError"
-import updateSettingsEntry from "./updateSettingsEntry"
+import cleanCodeBlock from "./cleanCodeBlock"
+import {
+	align,
+	blendModes,
+	caps,
+	cssTextStyleProperties,
+	defaultFonts,
+	defaultSettings
+} from "./constants"
 import extendFontlist from "./extendFontlist"
-import getSortedArtboardInfo from "./getSortedArtboardInfo"
-import { getOutputImagePixelRatio } from "./RasterUtils"
 import getCommonOutputSettings from "./getCommonOutputSettings"
+import getSymbolClass from "./getSymbolClass"
+import makeResizerScript from "./makeResizerScript"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
+import parseDataAttributes from "./parseDataAttributes"
+import parseObjectName from "./parseObjectName"
+import { parseSettingsEntries } from "./parseSettingsEntries"
+import { getOutputImagePixelRatio } from "./RasterUtils"
+import type { ai2HTMLSettings, ArtboardGroupForOutput, FontRule, ImageFormat } from "./types"
+import uniqAssetName from "./uniqAssetName"
+import updateSettingsEntry from "./updateSettingsEntry"
 
 function main() {
 	// Enclosing scripts in a named function (and not an anonymous, self-executing
@@ -275,8 +260,8 @@ function main() {
 			saveTextFile(jsonPath, jsonStr)
 		} else if (isTrue(settings.create_config_file)) {
 			// Create one top-level config.yml file
-			var yamlPath = docPath + (settings.config_file_path || "config.yml"),
-				yamlStr = nyt_generateScoopYaml(settings, doc, scriptVersion, JSON)
+			const yamlPath = docPath + (settings.config_file_path || "config.yml")
+			const yamlStr = nyt_generateScoopYaml(settings, doc, scriptVersion, JSON)
 			checkForOutputFolder(yamlPath.replace(/[^\/]+$/, ""), "configFileFolder")
 			saveTextFile(yamlPath, yamlStr)
 		}
@@ -290,7 +275,7 @@ function main() {
 	function renderArtboardGroup(group, masks, settings: ai2HTMLSettings, textBlockContent) {
 		var output = { html: "", js: "", css: "" }
 
-		forEach(group.artboards, function (activeArtboard: Artboard) {
+		forEach(group.artboards, (activeArtboard: Artboard) => {
 			var abIndex = findArtboardIndex(activeArtboard)
 			var abSettings = parseObjectName(activeArtboard.name)
 			var docArtboardName = getDocumentArtboardName(activeArtboard)
@@ -346,9 +331,9 @@ function main() {
 
 			progressWindow.step()
 
-			//=====================================
+			//========================================
 			// Finish generating artboard HTML and CSS
-			//=====================================
+			//========================================
 
 			output.html +=
 				"\t<!-- Artboard: " +
@@ -380,10 +365,6 @@ function main() {
 	// ======================================
 	// Illustrator specific utility functions
 	// ======================================
-
-	function clearMatrixShift(m) {
-		return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
-	}
 
 	function checkForOutputFolder(folderPath: string, nickname: string) {
 		var outputFolder = new Folder(folderPath)
@@ -507,7 +488,7 @@ function main() {
 	// ==================================
 
 	function groupArtboardsForOutput(settings: ai2HTMLSettings) {
-		let groups = []
+		let groups: ArtboardGroupForOutput[] = []
 		forEachUsableArtboard(doc, (ab: Artboard) => {
 			var group, groupName
 			if (settings.output == "one-file") {
@@ -518,7 +499,7 @@ function main() {
 				// multiple-file output: artboards are grouped by name
 				groupName = getDocumentArtboardName(ab)
 				group = find(groups, function (o) {
-					o.name == groupName
+					o.name === groupName
 				})
 			}
 			if (!group) {

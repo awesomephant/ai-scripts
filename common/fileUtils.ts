@@ -1,5 +1,5 @@
 import { forEach } from "./arrayUtils"
-import { parseYaml } from "./YamlUtils"
+import { parseYaml } from "./yamlUtils"
 
 function folderExists(path: string) {
 	return new Folder(path).exists
@@ -45,7 +45,7 @@ function readFile(fpath: string, onerror?: (err: string) => any, enc?: string) {
 function readTextFile(fpath: string): string {
 	// This function used to use File#eof and File#readln(), but
 	// that failed to read the last line when missing a final newline.
-	return readFile(fpath, () => { }, "UTF-8") || ""
+	return readFile(fpath, () => {}, "UTF-8") || ""
 }
 
 function saveTextFile(dest: string, contents: string) {

@@ -15,6 +15,10 @@ function forEachUsableArtboard(doc: Document, cb: (ab: Artboard, i: number) => a
 	}
 }
 
+function clearMatrixShift(m: Matrix, app: Application) {
+	return app.concatenateTranslationMatrix(m, -m.mValueTX, -m.mValueTY)
+}
+
 /**
  * Returns an artboard's responsiveness setting or the global
  * responsiveness setting contained in the settings parameter
@@ -72,7 +76,7 @@ function getSortedArtboardInfo(artboards: Artboard[], settings: ai2HTMLSettings)
 }
 
 /**
- * return the effective width of an artboard (the actual width, overridden by optional setting)
+ * Return the effective width of an artboard (the actual width, overridden by optional setting)
  */
 function getArtboardWidth(ab: Artboard): number {
 	var abSettings = parseObjectName(ab.name)
@@ -124,5 +128,6 @@ export {
 	makeDocumentSlug,
 	getSortedArtboardInfo,
 	findLargestArtboardIndex,
-	getWidthRangeForConfig
+	getWidthRangeForConfig,
+	clearMatrixShift
 }

@@ -1,7 +1,6 @@
 import { expect, it } from "vitest"
 import aiColorToCss from "../common/aiColorToCss"
 import { rgbColor, spotColor } from "./mock-ai"
-// const spotColor: SpotColor ={}
 
 // Todo (max) more tests
 it("converts RGBColor", () => {

@@ -25,6 +25,6 @@ describe("injectCSSinSVG()", function () {
 	it("injects a <style> element at the end of an <svg> element", function () {
 		expect(
 			injectCSSinSVG("<svg><rect x1='1' x2='5'></rect></svg>", "rect {fill: red}")
-		).toMatchSnapshot()
+		).toMatchInlineSnapshot(`"<svg><rect x1='1' x2='5'></rect><style>rect {fill: red}</style></svg>"`)
 	})
 })

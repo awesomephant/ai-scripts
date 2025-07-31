@@ -1,4 +1,4 @@
-function Folder(path: string) {
+function _Folder(path: string) {
 	addGetter(this, "exists", function () {
 		var exists = false
 		try {
@@ -15,3 +15,5 @@ function Folder(path: string) {
 function addGetter(o, name, func) {
 	Object.defineProperty(o, name, { get: func })
 }
+
+export default _Folder
