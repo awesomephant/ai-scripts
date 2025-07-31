@@ -35,6 +35,7 @@ import {
 import { isFalse, isTrue } from "../common/booleanUtils"
 import { formatCssRule } from "../common/cssUtils"
 import {
+	checkForOutputFolder,
 	deleteFile,
 	fileExists,
 	getScriptDirectory,
@@ -258,14 +259,14 @@ function main() {
 		//=====================================
 		if (isTrue(settings.create_json_config_files)) {
 			// Create JSON config files, one for each .ai file
-			var jsonStr = generateJsonSettingsFileContent(settings, doc, scriptVersion, JSON)
-			var jsonPath = docPath + getRawDocumentName(doc) + ".json"
+			const jsonStr = generateJsonSettingsFileContent(settings, doc, scriptVersion, JSON)
+			const jsonPath = docPath + getRawDocumentName(doc) + ".json"
 			saveTextFile(jsonPath, jsonStr)
 		} else if (isTrue(settings.create_config_file)) {
 			// Create one top-level config.yml file
 			const yamlPath = docPath + (settings.config_file_path || "config.yml")
 			const yamlStr = nyt_generateScoopYaml(settings, doc, scriptVersion, JSON)
-			checkForOutputFolder(yamlPath.replace(/[^\/]+$/, ""), "configFileFolder")
+			checkForOutputFolder(yamlPath.replace(/[^\/]+$/, ""), "configFileFolder", message, warn)
 			saveTextFile(yamlPath, yamlStr)
 		}
 
@@ -275,8 +276,13 @@ function main() {
 	}
 
 	// render a group of artboards and save to a file
+	interface outputData {
+		html: string
+		js: string
+		css: string
+	}
 	function renderArtboardGroup(group, masks, settings: ai2HTMLSettings, textBlockContent) {
-		var output = { html: "", js: "", css: "" }
+		const output: outputData = { html: "", js: "", css: "" }
 
 		forEach(group.artboards, (activeArtboard: Artboard) => {
 			var abIndex = findArtboardIndex(activeArtboard)
@@ -298,12 +304,12 @@ function main() {
 			// Convert text objects
 			// ========================
 
+			progressWindow.setTitle(docArtboardName + ": Generating text...")
 			if (abSettings.image_only || settings.render_text_as == "image") {
 				// don't convert text objects to HTML
 				textFrames = []
 				textData = { html: "", styles: [] }
 			} else {
-				progressWindow.setTitle(docArtboardName + ": Generating text...")
 				textFrames = getTextFramesByArtboard(activeArtboard, masks, settings)
 				textData = convertTextFrames(textFrames, activeArtboard, settings)
 			}
@@ -364,22 +370,6 @@ function main() {
 		addTextBlockContent(output, textBlockContent)
 		generateOutputHtml(output, group, settings)
 	} // end render()
-
-	// ======================================
-	// Illustrator specific utility functions
-	// ======================================
-
-	function checkForOutputFolder(folderPath: string, nickname: string) {
-		var outputFolder = new Folder(folderPath)
-		if (!outputFolder.exists) {
-			var outputFolderCreated = outputFolder.create()
-			if (outputFolderCreated) {
-				message("The " + nickname + " folder did not exist, so the folder was created.")
-			} else {
-				warn("The " + nickname + " folder did not exist and could not be created.")
-			}
-		}
-	}
 
 	// =====================================
 	// ai2html specific utility functions
@@ -2258,7 +2248,7 @@ function main() {
 		var hiddenLayers = []
 		var i
 
-		checkForOutputFolder(getImageFolder(settings), "image_output_path")
+		checkForOutputFolder(getImageFolder(settings), "image_output_path", message, warn)
 
 		if (hideTextFrames) {
 			for (i = 0; i < textFrameCount; i++) {
@@ -2916,25 +2906,35 @@ function main() {
 		return html
 	}
 
-	function generateArtboardCss(ab: Artboard, group, cssRules: string[], settings: ai2HTMLSettings) {
-		var abId = "#" + nameSpace + getArtboardUniqueName(ab, settings),
-			css = formatCssRule(abId, {
-				position: "relative",
-				overflow: "hidden"
-			})
+	function generateArtboardCss(
+		ab: Artboard,
+		group: ArtboardGroupForOutput,
+		cssRules: string[],
+		settings: ai2HTMLSettings
+	) {
+		const artboardId = "#" + nameSpace + getArtboardUniqueName(ab, settings)
+		let css = formatCssRule(artboardId, {
+			position: "relative",
+			overflow: "hidden"
+		})
 
 		if (isTrue(settings.include_resizer_css)) {
-			css += generateContainerQueryCss(ab, abId, group, settings)
+			css += generateContainerQueryCss(ab, artboardId, group, settings)
 		}
 
 		// classes for paragraph and character styles
-		forEach(cssRules, function (cssBlock) {
-			css += abId + " " + cssBlock
+		forEach(cssRules, (cssBlock) => {
+			css += artboardId + " " + cssBlock
 		})
 		return css
 	}
 
-	function generateContainerQueryCss(ab: Artboard, abId: string, group, settings: ai2HTMLSettings) {
+	function generateContainerQueryCss(
+		ab: Artboard,
+		abId: string,
+		group: ArtboardGroupForOutput,
+		settings: ai2HTMLSettings
+	) {
 		var css = ""
 		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
 		var isSmallest = visibleRange[0] === 0
@@ -2965,7 +2965,11 @@ function main() {
 	}
 
 	// Get CSS styles that are common to all generated content
-	function generatePageCss(containerId: string, group, settings) {
+	function generatePageCss(
+		containerId: string,
+		group: ArtboardGroupForOutput,
+		settings: ai2HTMLSettings
+	) {
 		var css = ""
 		var blockStart = "#" + containerId
 
@@ -3160,7 +3164,7 @@ function main() {
 
 		textForFile = applyTemplate(textForFile, settings)
 		htmlFileDestinationFolder = docPath + settings.html_output_path
-		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path")
+		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path", message, warn)
 		htmlFileDestination = htmlFileDestinationFolder + pageName + settings.html_output_extension
 
 		// write file

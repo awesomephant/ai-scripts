@@ -57,6 +57,27 @@ function saveTextFile(dest: string, contents: string) {
 	fd.close()
 }
 
+function checkForOutputFolder(
+	folderPath: string,
+	nickname: string,
+	oncreated: (message: string) => void,
+	onerror: (err: string) => void
+) {
+	const outputFolder = new Folder(folderPath)
+	if (!outputFolder.exists) {
+		const outputFolderCreated = outputFolder.create()
+		if (outputFolderCreated) {
+			if (oncreated) {
+				oncreated("The " + nickname + " folder did not exist, so the folder was created.")
+			}
+		} else {
+			if (onerror) {
+				onerror("The " + nickname + " folder did not exist and could not be created.")
+			}
+		}
+	}
+}
+
 function readJsonFile(fpath: string, JSON: any, onerror: (e: string) => any) {
 	var content = readTextFile(fpath)
 	var json = null
@@ -122,5 +143,6 @@ export {
 	getScriptDirectory,
 	readFile,
 	readJsonFile,
-	readYamlConfigFile
+	readYamlConfigFile,
+	checkForOutputFolder
 }

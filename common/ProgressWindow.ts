@@ -1,5 +1,5 @@
 interface ProgressWindowOptions {
-	steps?: number
+	steps: number
 	name?: string
 }
 
@@ -9,26 +9,17 @@ const defaultOptions: ProgressWindowOptions = {
 }
 
 export default class ProgressWindow {
-	opts: ProgressWindowOptions = {}
+	opts: ProgressWindowOptions
 	currentStep: number = 0
 	win: any
 
-	constructor(options: ProgressWindowOptions = {}) {
+	constructor(options: ProgressWindowOptions) {
 		this.opts = { ...defaultOptions, ...options }
 		this.currentStep = 0
 		this.win = new Window("palette", this.opts.name, [150, 150, 600, 260])
 		this.win.pnl = this.win.add("panel", [10, 10, 440, 100], "Progress")
-		this.win.pnl.progBar = this.win.pnl.add(
-			"progressbar",
-			[20, 35, 410, 50],
-			0,
-			100
-		)
-		this.win.pnl.progBarLabel = this.win.pnl.add(
-			"statictext",
-			[20, 20, 320, 35],
-			"0%"
-		)
+		this.win.pnl.progBar = this.win.pnl.add("progressbar", [20, 35, 410, 50], 0, 100)
+		this.win.pnl.progBarLabel = this.win.pnl.add("statictext", [20, 20, 320, 35], "0%")
 		this.win.show()
 	}
 
