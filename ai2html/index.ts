@@ -78,6 +78,7 @@ import {
 	getArtboardName,
 	getArtboardResponsiveness,
 	getArtboardWidth,
+	getDocumentArtboardName,
 	getGroupContainerId,
 	getLayerName,
 	getRawDocumentName,
@@ -98,6 +99,7 @@ import extendFontlist from "./extendFontlist"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import getCommonOutputSettings from "./getCommonOutputSettings"
 import getSymbolClass from "./getSymbolClass"
+import groupArtboardsForOutput from "./groupArtboardForOutput"
 import makeResizerScript from "./makeResizerScript"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
 import parseDataAttributes from "./parseDataAttributes"
@@ -243,7 +245,7 @@ function main() {
 		unlockObjects()
 
 		const masks = findMasks() // identify all clipping masks and their contents
-		const groups = groupArtboardsForOutput(settings)
+		const groups = groupArtboardsForOutput(settings, docSlug, doc)
 
 		if (groups.length === 0) error("No usable artboards were found")
 
@@ -287,7 +289,7 @@ function main() {
 		forEach(group.artboards, (activeArtboard: Artboard) => {
 			var abIndex = findArtboardIndex(activeArtboard)
 			var abSettings = parseObjectName(activeArtboard.name)
-			var docArtboardName = getDocumentArtboardName(activeArtboard)
+			var docArtboardName = getDocumentArtboardName(activeArtboard, docSlug)
 			var textFrames, textData, imageData, specialData
 
 			doc.artboards.setActiveArtboardIndex(abIndex)
@@ -479,42 +481,6 @@ function main() {
 	// ==================================
 	// ai2html program state and settings
 	// ==================================
-
-	function groupArtboardsForOutput(settings: ai2HTMLSettings) {
-		let groups: ArtboardGroupForOutput[] = []
-		forEachUsableArtboard(doc, (ab: Artboard) => {
-			var group, groupName
-			if (settings.output == "one-file") {
-				// single-file output: artboards share a single group
-				groupName = getRawDocumentName(doc)
-				group = groups[0]
-			} else {
-				// multiple-file output: artboards are grouped by name
-				groupName = getDocumentArtboardName(ab)
-				group = find(groups, function (o) {
-					o.name === groupName
-				})
-			}
-			if (!group) {
-				group = {
-					groupName: groupName,
-					artboards: []
-				}
-				groups.push(group)
-			}
-			group.artboards.push(ab)
-		})
-		// kludge for legacy embed projects
-		if (
-			groups.length == 1 &&
-			settings.output == "one-file" &&
-			settings.project_type == "ai2html" &&
-			!isTrue(settings.create_json_config_files)
-		) {
-			group[0].groupName = "index"
-		}
-		return groups
-	}
 
 	function validateArtboardNames(settings: ai2HTMLSettings) {
 		let names: string[] = []
@@ -759,11 +725,7 @@ function main() {
 		if (settings.grouped_artboards) {
 			suffix = "-" + Math.round(aiBoundsToRect(ab.artboardRect).width)
 		}
-		return getDocumentArtboardName(ab) + suffix
-	}
-
-	function getDocumentArtboardName(ab: Artboard) {
-		return docSlug + "-" + getArtboardName(ab)
+		return getDocumentArtboardName(ab, docSlug) + suffix
 	}
 
 	// get range of container widths that an ab is visible as a [min,max] array

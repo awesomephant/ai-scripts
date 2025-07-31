@@ -1,7 +1,7 @@
 import { expect, it, describe } from "vitest"
-import { contains } from "../common/arrayUtils"
+import { contains, indexOf } from "../common/arrayUtils"
 
-describe("contains()", function () {
+describe("contains()", () => {
 	it("returns false if item not in array", () => {
 		expect(contains([], "a")).toBe(false)
 		expect(contains([1], "1")).toBe(false)
@@ -24,5 +24,24 @@ describe("contains()", function () {
 				return n > 3
 			})
 		).toBe(false)
+	})
+})
+
+describe("indexOf()", () => {
+	it("returns the correct index", () => {
+		const arr = ["apples", "oranges", "bananas"]
+		expect(indexOf(arr, "oranges")).toBe(1)
+	})
+	it("returns -1 if no match found", () => {
+		const arr = ["apples", "oranges", "bananas"]
+		expect(indexOf(arr, "fish")).toBe(-1)
+	})
+	it("takes a match function", () => {
+		const arr = [{ name: "apples" }, { name: "oranges" }, { name: "bananas" }]
+		expect(
+			indexOf(arr, (el) => {
+				return el.name === "bananas"
+			})
+		).toBe(2)
 	})
 })

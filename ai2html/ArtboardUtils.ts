@@ -116,6 +116,10 @@ function getWidthRangeForConfig(settings: ai2HTMLSettings, doc: Document): [numb
 	return [min, max]
 }
 
+function getDocumentArtboardName(ab: Artboard, docSlug: string) {
+	return docSlug + "-" + getArtboardName(ab)
+}
+
 // create temp document (takes ~1.5s)
 function makeTmpDocument(doc: Document, ab: Artboard) {
 	const artboardBounds = ab.artboardRect
@@ -143,5 +147,6 @@ export {
 	findLargestArtboardIndex,
 	getWidthRangeForConfig,
 	clearMatrixShift,
-	makeTmpDocument
+	makeTmpDocument,
+	getDocumentArtboardName
 }
