@@ -81,7 +81,8 @@ import {
 	getLayerName,
 	getRawDocumentName,
 	getSortedArtboardInfo,
-	makeDocumentSlug
+	makeDocumentSlug,
+	makeTmpDocument
 } from "./ArtboardUtils"
 import cleanCodeBlock from "./cleanCodeBlock"
 import {
@@ -93,6 +94,7 @@ import {
 	defaultSettings
 } from "./constants"
 import extendFontlist from "./extendFontlist"
+import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import getCommonOutputSettings from "./getCommonOutputSettings"
 import getSymbolClass from "./getSymbolClass"
 import makeResizerScript from "./makeResizerScript"
@@ -256,7 +258,7 @@ function main() {
 		//=====================================
 		if (isTrue(settings.create_json_config_files)) {
 			// Create JSON config files, one for each .ai file
-			var jsonStr = generateJsonSettingsFileContent(settings)
+			var jsonStr = generateJsonSettingsFileContent(settings, doc, scriptVersion, JSON)
 			var jsonPath = docPath + getRawDocumentName(doc) + ".json"
 			saveTextFile(jsonPath, jsonStr)
 		} else if (isTrue(settings.create_config_file)) {
@@ -2401,7 +2403,12 @@ function main() {
 		return html
 	}
 
-	function generateInlineSvg(imgPath, imgClass, imgStyle, settings) {
+	function generateInlineSvg(
+		imgPath: string,
+		imgClass: string,
+		imgStyle: string,
+		settings: ai2HTMLSettings
+	) {
 		var svg = readFile(imgPath, warn) || ""
 		var attr = ' class="' + imgClass + '"'
 		if (imgStyle) {
@@ -2421,7 +2428,7 @@ function main() {
 	//   and passes each tagged layer to a callback, after hiding all other content
 	// Side effect: Tagged layers remain hidden after the function completes
 	//   (they have to be unhidden later)
-	function forEachImageLayer(imageType, callback) {
+	function forEachImageLayer(imageType, callback: (layer: Layer) => void) {
 		var targetLayers = findTaggedLayers(imageType) // only finds visible layers with a tag
 		var hiddenLayers = []
 		if (targetLayers.length === 0) return
@@ -2456,7 +2463,7 @@ function main() {
 	}
 
 	// ab: the active artboard
-	function captureArtboardImage(imgName, ab: Artboard, masks, settings) {
+	function captureArtboardImage(imgName: string, ab: Artboard, masks, settings) {
 		var formats = settings.image_format
 		var imgHtml: string
 
@@ -2537,17 +2544,18 @@ function main() {
 	// Create a promo image from the largest usable artboard
 	function createPromoImage(settings: ai2HTMLSettings) {
 		var abIndex = findLargestArtboardIndex(doc)
-		if (abIndex == -1) return // TODO: show error
-		var ab = doc.artboards[abIndex],
-			format = getPromoImageFormat(ab, settings),
-			imgFile = getImageFileName(docSlug + "-promo", format),
-			outputPath = docPath + imgFile,
-			opts = {
-				image_width: settings.promo_image_width || 1024,
-				jpg_quality: settings.jpg_quality,
-				png_number_of_colors: settings.png_number_of_colors,
-				png_transparent: false
-			}
+		if (abIndex == -1) return // TODO (max): show error
+		const ab = doc.artboards[abIndex]
+		const format = getPromoImageFormat(ab, settings)
+		const imgFile = getImageFileName(docSlug + "-promo", format)
+		const outputPath = docPath + imgFile
+		const opts: Partial<exportRasterOptions> = {
+			image_width: settings.promo_image_width || 1024,
+			jpg_quality: settings.jpg_quality,
+			png_number_of_colors: settings.png_number_of_colors,
+			png_transparent: false
+		}
+
 		doc.artboards.setActiveArtboardIndex(abIndex)
 		exportRasterImage(outputPath, ab, format, opts)
 		alert("Promo image created\nLocation: " + outputPath)
@@ -2621,19 +2629,6 @@ function main() {
 		exportOptions.artBoardClipping = true
 		exportOptions.antiAliasing = false
 		app.activeDocument.exportFile(new File(imgPath), fileType, exportOptions)
-	}
-
-	// create temp document (takes ~1.5s)
-	function makeTmpDocument(doc: Document, ab: Artboard) {
-		const artboardBounds = ab.artboardRect
-		let doc2 = app.documents.add(DocumentColorSpace.RGB, doc.width, doc.height, 1)
-		doc2.pageOrigin = doc.pageOrigin // not sure if needed
-		doc2.rulerOrigin = doc.rulerOrigin
-
-		// The following caused MRAP:
-		// doc2.artboards[0].artboardRect = ab.artboardRect;
-		doc2.artboards[0].artboardRect = artboardBounds
-		return doc2
 	}
 
 	// Copy contents of an artboard to a temporary document, excluding objects
@@ -2785,10 +2780,10 @@ function main() {
 	// Returns true if a file was created or else false (because svg document was empty);
 	function exportSVG(ofile, ab, masks, items, settings) {
 		// Illustrator's SVG output contains all objects in a document (it doesn't
-		//   clip to the current artboard), so we copy artboard objects to a temporary
-		//   document for export.
-		var exportDoc = copyArtboardForImageExport(ab, masks, items)
-		var opts = new ExportOptionsSVG()
+		// clip to the current artboard), so we copy artboard objects to a temporary
+		// document for export.
+		const exportDoc = copyArtboardForImageExport(ab, masks, items)
+		let opts = new ExportOptionsSVG()
 		if (!exportDoc) return false
 
 		opts.embedAllFonts = false
@@ -3038,17 +3033,6 @@ function main() {
 			"white-space": "nowrap"
 		})
 		return css
-	}
-
-	function generateJsonSettingsFileContent(settings: ai2HTMLSettings) {
-		var o = getCommonOutputSettings(settings, doc, scriptVersion)
-		forEach(settings.config_file, (key) => {
-			var val = String(settings[key])
-			if (isTrue(val)) val = true
-			else if (isFalse(val)) val = false
-			o[key] = val
-		})
-		return JSON.stringify(o, null, 2)
 	}
 
 	// Write an HTML page to a file for NYT Preview

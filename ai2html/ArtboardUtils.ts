@@ -116,6 +116,19 @@ function getWidthRangeForConfig(settings: ai2HTMLSettings, doc: Document): [numb
 	return [min, max]
 }
 
+// create temp document (takes ~1.5s)
+function makeTmpDocument(doc: Document, ab: Artboard) {
+	const artboardBounds = ab.artboardRect
+	let doc2 = app.documents.add(DocumentColorSpace.RGB, doc.width, doc.height, 1)
+	doc2.pageOrigin = doc.pageOrigin // not sure if needed
+	doc2.rulerOrigin = doc.rulerOrigin
+
+	// The following caused MRAP:
+	// doc2.artboards[0].artboardRect = ab.artboardRect;
+	doc2.artboards[0].artboardRect = artboardBounds
+	return doc2
+}
+
 export {
 	findUsableArtboards,
 	forEachUsableArtboard,
@@ -129,5 +142,6 @@ export {
 	getSortedArtboardInfo,
 	findLargestArtboardIndex,
 	getWidthRangeForConfig,
-	clearMatrixShift
+	clearMatrixShift,
+	makeTmpDocument
 }
