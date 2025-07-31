@@ -17,7 +17,7 @@ it("works with generic error", () => {
 	expect(formatError(err)).toBe("RuntimeError: Test")
 })
 
-it("returns line if present", () => {
+it("returns line number if present", () => {
 	const err = {
 		name: "test",
 		message: "Test",

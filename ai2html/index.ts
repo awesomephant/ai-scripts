@@ -96,7 +96,15 @@ import {
 } from "../common/geometryUtils"
 import aiColorToCss from "../common/aiColorToCss"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
-import { forEachUsableArtboard, getArtboardResponsiveness } from "./ArtboardUtils"
+import {
+	forEachUsableArtboard,
+	getArtboardName,
+	getArtboardResponsiveness,
+	getGroupContainerId,
+	getLayerName,
+	getRawDocumentName,
+	makeDocumentSlug
+} from "./ArtboardUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import getDateTimestamp from "../common/getDateTimestamp"
 import formatError from "../common/formatError"
@@ -177,14 +185,13 @@ function main() {
 			// TODO: find a better way to detect this condition (mask can be renamed)
 			error("ai2html cannot run because you are editing an Opacity Mask.")
 		}
-
 		// initialize script settings
 		doc = app.activeDocument
 		docPath = doc.path + "/"
 		docIsSaved = doc.saved
 		textBlockData = initSpecialTextBlocks()
 		docSettings = initDocumentSettings(textBlockData.settings)
-		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName())
+		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName(doc))
 		nameSpace = docSettings.namespace || nameSpace
 		fonts = extendFontlist(fonts, docSettings.fonts || [])
 
@@ -256,7 +263,7 @@ function main() {
 		if (isTrue(settings.create_json_config_files)) {
 			// Create JSON config files, one for each .ai file
 			var jsonStr = generateJsonSettingsFileContent(settings)
-			var jsonPath = docPath + getRawDocumentName() + ".json"
+			var jsonPath = docPath + getRawDocumentName(doc) + ".json"
 			saveTextFile(jsonPath, jsonStr)
 		} else if (isTrue(settings.create_config_file)) {
 			// Create one top-level config.yml file
@@ -497,7 +504,7 @@ function main() {
 			var group, groupName
 			if (settings.output == "one-file") {
 				// single-file output: artboards share a single group
-				groupName = getRawDocumentName()
+				groupName = getRawDocumentName(doc)
 				group = groups[0]
 			} else {
 				// multiple-file output: artboards are grouped by name
@@ -762,28 +769,6 @@ function main() {
 	// ======================================
 	// ai2html AI document reading functions
 	// ======================================
-
-	// TODO: prevent duplicate names? or treat duplicate names an an error condition?
-	// (artboard name is assumed to be unique in several places)
-	function getArtboardName(ab: Artboard) {
-		return cleanObjectName(ab.name)
-	}
-
-	function getLayerName(layer: Layer) {
-		return cleanObjectName(layer.name)
-	}
-
-	function makeDocumentSlug(rawName: string) {
-		return makeKeyword(rawName.replace(/ +/g, "-"))
-	}
-
-	function getRawDocumentName() {
-		return doc.name.replace(/(.+)\.[aieps]+$/, "$1")
-	}
-
-	function getGroupContainerId(groupName: string) {
-		return nameSpace + groupName + "-box"
-	}
 
 	// Prevent duplicate artboard names by appending width
 	// (Assumes dupes have different widths and have been named to form a group)
@@ -3107,7 +3092,7 @@ function main() {
 				query += " and (width < " + (visibleRange[1] + 1) + "px)"
 			}
 		}
-		css += "@container " + getGroupContainerId(group.groupName) + " " + query + " {\r"
+		css += "@container " + getGroupContainerId(nameSpace, group.groupName) + " " + query + " {\r"
 		css += formatCssRule(abId, { display: isSmallest ? "none" : "block" })
 		css += "}\r"
 		return css
@@ -3277,7 +3262,7 @@ function main() {
 		var pageName = group.groupName
 		var linkSrc = settings.clickable_link || ""
 		var responsiveJs = ""
-		var containerId = getGroupContainerId(pageName)
+		var containerId = getGroupContainerId(nameSpace, pageName)
 		var altTextId = containerId + "-img-desc"
 		var textForFile, html, js, css, commentBlock
 		var htmlFileDestinationFolder, htmlFileDestination
