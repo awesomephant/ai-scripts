@@ -21,3 +21,6 @@
 - extracted `formatError()`
 - extracted `replaceSvgIds()`
 - extracted `getArtboardUniqueName()`
+- extracted `getCircleData()`
+- extracted `getRectangleData()`
+- extracted `getLineGeometry()`

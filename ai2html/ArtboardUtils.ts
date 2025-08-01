@@ -1,5 +1,5 @@
 import { forEach } from "../common/arrayUtils"
-import { aiBoundsToRect } from "../common/geometryUtils"
+import { aiBoundsToRect, boundsIntersect } from "../common/geometryUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
 import parseObjectName from "./parseObjectName"
@@ -151,6 +151,18 @@ function makeTmpDocument(doc: Document, ab: Artboard) {
 	return doc2
 }
 
+function objectOverlapsArtboard(obj: PageItem, ab: Artboard) {
+	return boundsIntersect(ab.artboardRect, obj.geometricBounds)
+}
+
+function objectOverlapsAnyArtboard(obj: PageItem, doc: Document) {
+	var hit = false
+	forEachUsableArtboard(doc, (ab) => {
+		hit = hit || objectOverlapsArtboard(obj, ab)
+	})
+	return hit
+}
+
 export {
 	findUsableArtboards,
 	forEachUsableArtboard,
@@ -168,5 +180,7 @@ export {
 	makeTmpDocument,
 	getDocumentArtboardName,
 	calcProgressBarSteps,
-	getArtboardUniqueName
+	getArtboardUniqueName,
+	objectOverlapsArtboard,
+	objectOverlapsAnyArtboard
 }

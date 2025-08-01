@@ -50,6 +50,9 @@ import {
 	aiBoundsToRect,
 	boundsAreSimilar,
 	boundsIntersect,
+	getBBoxCenter,
+	getPathBBox,
+	pathPointIsCorner,
 	shiftBounds
 } from "../common/geometryUtils"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
@@ -87,7 +90,9 @@ import {
 	getRawDocumentName,
 	getSortedArtboardInfo,
 	makeDocumentSlug,
-	makeTmpDocument
+	makeTmpDocument,
+	objectOverlapsAnyArtboard,
+	objectOverlapsArtboard
 } from "./ArtboardUtils"
 import cleanCodeBlock from "./cleanCodeBlock"
 import {
@@ -101,6 +106,9 @@ import {
 import extendFontlist from "./extendFontlist"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import generatePageCss from "./generatePageCss"
+import getCircleData from "./getCircleData"
+import getLineGeometry from "./getLineGeometry"
+import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
 import makeResizerScript from "./makeResizerScript"
@@ -539,7 +547,7 @@ function main() {
 				code[type] = code[type] || []
 				code[type].push(cleanCodeBlock(type, lines.join("\r")))
 			}
-			if (objectOverlapsAnArtboard(thisFrame)) {
+			if (objectOverlapsAnyArtboard(thisFrame, doc)) {
 				// An error will be thrown if trying to hide a text frame inside a
 				// locked layer. Solution: unlock any locked parent layers.
 				if (objectIsLocked(thisFrame)) {
@@ -756,7 +764,7 @@ function main() {
 		return indexOf(doc.artboards, ab)
 	}
 
-	function findLayers(layers, test) {
+	function findLayers(layers: Layer[], test: (layer: Layer) => boolean) {
 		var retn = []
 		forEach(layers, function (lyr) {
 			var found = null
@@ -787,18 +795,6 @@ function main() {
 		// doc.selection = null;
 		// the following seems to work reliably.
 		app.executeMenuCommand("deselectall")
-	}
-
-	function objectOverlapsAnArtboard(obj: Object) {
-		var hit = false
-		forEachUsableArtboard(doc, (ab) => {
-			hit = hit || objectOverlapsArtboard(obj, ab)
-		})
-		return hit
-	}
-
-	function objectOverlapsArtboard(obj: Object, ab: Artboard) {
-		return boundsIntersect(ab.artboardRect, obj.geometricBounds)
 	}
 
 	function objectIsHidden(obj) {
@@ -845,7 +841,7 @@ function main() {
 	}
 
 	// Return array of layer objects, including both PageItems and sublayers, in z order
-	function getSortedLayerItems(lyr) {
+	function getSortedLayerItems(lyr: Layer) {
 		var items = toArray(lyr.pageItems).concat(toArray(lyr.layers))
 		if (lyr.layers.length > 0 && lyr.pageItems.length > 0) {
 			// only need to sort if layer contains both layers and page objects
@@ -1941,124 +1937,6 @@ function main() {
 			style.strokeWidth = Math.max(1, Math.round(item.strokeWidth))
 		}
 		return style
-	}
-
-	function getPathBBox(points) {
-		var bbox = [Infinity, Infinity, -Infinity, -Infinity]
-		var p
-		for (var i = 0, n = points.length; i < n; i++) {
-			p = points[i].anchor
-			if (p[0] < bbox[0]) bbox[0] = p[0]
-			if (p[0] > bbox[2]) bbox[2] = p[0]
-			if (p[1] < bbox[1]) bbox[1] = p[1]
-			if (p[1] > bbox[3]) bbox[3] = p[1]
-		}
-		return bbox
-	}
-
-	function getBBoxCenter(bbox) {
-		return [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
-	}
-
-	// Return array of line records if path is composed only of vertical and/or
-	// horizontal line segments, else return null;
-	function getLineGeometry(points) {
-		var bbox, w, h, p
-		var lines = []
-		for (var i = 0, n = points.length; i < n; i++) {
-			p = points[i]
-			if (!pathPointIsCorner(p)) {
-				return null
-			}
-			if (i === 0) {
-				continue
-			}
-			bbox = getPathBBox([points[i - 1], p])
-			w = bbox[2] - bbox[0]
-			h = bbox[3] - bbox[1]
-			if (w < 1 && h < 1) {
-				continue
-			} // double vertex = skip
-			if (w > 1 && h > 1) return null // diagonal line = fail
-			lines.push({
-				type: "line",
-				center: getBBoxCenter(bbox),
-				width: w,
-				height: h
-			})
-		}
-		return lines.length > 0 ? lines : null
-	}
-
-	function pathPointIsCorner(p: PathPoint) {
-		var xy = p.anchor
-		// Vertices of polylines (often) use PointType.SMOOTH. Need to check control points
-		//   to determine if the line is curved or not at p
-		// if (p.pointType != PointType.CORNER) return false;
-		if (
-			xy[0] != p.leftDirection[0] ||
-			xy[0] != p.rightDirection[0] ||
-			xy[1] != p.leftDirection[1] ||
-			xy[1] != p.rightDirection[1]
-		) {
-			return false
-		}
-		return true
-	}
-
-	// If path described by points array looks like a rectangle, return data for rendering
-	//   as a rectangle; else return null
-	// points: an array of PathPoint objects
-	function getRectangleData(points) {
-		var bbox, p, xy
-		// Some rectangles are 4-point closed paths, some are 5-point open paths
-		if (points.length < 4 || points.length > 5) return null
-		bbox = getPathBBox(points)
-		for (var i = 0; i < 4; i++) {
-			p = points[i]
-			xy = p.anchor
-			if (!pathPointIsCorner(p)) return null
-			// point must be a bbox corner
-			if (xy[0] != bbox[0] && xy[0] != bbox[2] && xy[1] != bbox[1] && xy[1] != bbox[3]) {
-				return null
-			}
-		}
-		return {
-			type: "rectangle",
-			center: getBBoxCenter(bbox),
-			width: bbox[2] - bbox[0],
-			height: bbox[3] - bbox[1]
-		}
-	}
-
-	// If path described by points array looks like a circle, return data for rendering
-	//    as a circle; else return null
-	// Assumes that circles have four anchor points at the top, right, bottom and left
-	//    positions around the circle.
-	// points: an array of PathPoint objects
-	function getCircleData(points) {
-		var bbox, p, xy, edges
-		if (points.length != 4) return null
-		bbox = getPathBBox(points)
-		for (var i = 0; i < 4; i++) {
-			p = points[i]
-			xy = p.anchor
-			// heuristic for identifying circles:
-			// * each vertex is "smooth"
-			// * either x or y coord of each vertex is on the bbox
-			if (p.pointType != PointType.SMOOTH) return null
-			edges = 0
-			if (xy[0] == bbox[0] || xy[0] == bbox[2]) edges++
-			if (xy[1] == bbox[1] || xy[1] == bbox[3]) edges++
-			if (edges != 1) return null
-		}
-		return {
-			type: "circle",
-			center: getBBoxCenter(bbox),
-			// radius is the average of vertical and horizontal half-axes
-			// ellipses are converted to circles
-			radius: (bbox[2] - bbox[0] + bbox[3] - bbox[1]) / 4
-		}
 	}
 
 	// =================================
