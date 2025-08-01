@@ -9,13 +9,19 @@ export default function groupArtboardsForOutput(
 	doc: Document
 ) {
 	let groups: ArtboardGroupForOutput[] = []
-
 	forEachUsableArtboard(doc, (ab: Artboard) => {
 		let groupName: string
 		if (settings.output == "one-file") {
 			// single-file output: artboards share a single group
 			groupName = getRawDocumentName(doc)
-			groups[0].artboards.push(ab)
+			if (groups[0]) {
+				groups[0].artboards.push(ab)
+			} else {
+				groups[0] = {
+					groupName,
+					artboards: [ab]
+				}
+			}
 		} else {
 			// multiple-file output: artboards are grouped by name
 			groupName = getDocumentArtboardName(ab, docslug)
