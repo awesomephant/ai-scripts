@@ -79,6 +79,7 @@ import {
 	forEachUsableArtboard,
 	getArtboardName,
 	getArtboardResponsiveness,
+	getArtboardUniqueName,
 	getArtboardWidth,
 	getDocumentArtboardName,
 	getGroupContainerId,
@@ -712,16 +713,6 @@ function main() {
 	// ======================================
 	// ai2html AI document reading functions
 	// ======================================
-
-	// Prevent duplicate artboard names by appending width
-	// (Assumes dupes have different widths and have been named to form a group)
-	function getArtboardUniqueName(ab: Artboard, settings: ai2HTMLSettings) {
-		var suffix = ""
-		if (settings.grouped_artboards) {
-			suffix = "-" + Math.round(aiBoundsToRect(ab.artboardRect).width)
-		}
-		return getDocumentArtboardName(ab, docSlug) + suffix
-	}
 
 	// get range of container widths that an ab is visible as a [min,max] array
 	// smallest artboard starts with 0, largest artboard ends with Infinity
@@ -2074,12 +2065,12 @@ function main() {
 	// ai2html image functions
 	// =================================
 
-	function getArtboardImageName(ab, settings) {
-		return getArtboardUniqueName(ab, settings)
+	function getArtboardImageName(ab: Artboard, settings: ai2HTMLSettings) {
+		return getArtboardUniqueName(ab, settings, docSlug)
 	}
 
-	function getLayerImageName(lyr, ab, settings) {
-		return getArtboardImageName(ab, settings) + "-" + getLayerName(lyr)
+	function getLayerImageName(layer: Layer, ab: Artboard, settings: ai2HTMLSettings) {
+		return getArtboardImageName(ab, settings) + "-" + getLayerName(layer)
 	}
 
 	function getImageId(imgName: string) {
@@ -2813,8 +2804,12 @@ function main() {
 	// ai2html output generation functions
 	// ===================================
 
-	function generateArtboardDiv(ab: Artboard, group, settings: ai2HTMLSettings) {
-		var id = nameSpace + getArtboardUniqueName(ab, settings)
+	function generateArtboardDiv(
+		ab: Artboard,
+		group: ArtboardGroupForOutput,
+		settings: ai2HTMLSettings
+	) {
+		var id = nameSpace + getArtboardUniqueName(ab, settings, docSlug)
 		var classname = nameSpace + "artboard"
 		var widthRange = getArtboardWidthRange(ab, group, settings)
 		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
@@ -2861,7 +2856,7 @@ function main() {
 		cssRules: string[],
 		settings: ai2HTMLSettings
 	) {
-		const artboardId = "#" + nameSpace + getArtboardUniqueName(ab, settings)
+		const artboardId = "#" + nameSpace + getArtboardUniqueName(ab, settings, docSlug)
 		let css = formatCssRule(artboardId, {
 			position: "relative",
 			overflow: "hidden"

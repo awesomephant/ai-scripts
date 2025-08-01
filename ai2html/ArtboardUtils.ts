@@ -58,6 +58,16 @@ function findUsableArtboards(doc: Document) {
 	return arr
 }
 
+// Prevent duplicate artboard names by appending width
+// (Assumes dupes have different widths and have been named to form a group)
+function getArtboardUniqueName(ab: Artboard, settings: ai2HTMLSettings, docSlug: string) {
+	var suffix = ""
+	if (settings.grouped_artboards) {
+		suffix = "-" + Math.round(aiBoundsToRect(ab.artboardRect).width)
+	}
+	return getDocumentArtboardName(ab, docSlug) + suffix
+}
+
 /**
  * Return array of data records about each artboard, sorted from narrow to wide
  */
@@ -157,5 +167,6 @@ export {
 	clearMatrixShift,
 	makeTmpDocument,
 	getDocumentArtboardName,
-	calcProgressBarSteps
+	calcProgressBarSteps,
+	getArtboardUniqueName
 }

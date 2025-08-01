@@ -20,3 +20,4 @@
 - extracted `extendFontlist()`
 - extracted `formatError()`
 - extracted `replaceSvgIds()`
+- extracted `getArtboardUniqueName()`
