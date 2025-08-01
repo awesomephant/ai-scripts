@@ -22,12 +22,11 @@ function filter(arr: any[], test: (element: any, index: number) => boolean) {
 	return filtered
 }
 
-// obj: value or test function
-type ArrayTest = ((element: any) => boolean) | string | number | null
-
+type ArrayTest = ((element: any) => boolean) | string | number | Artboard | null
 function indexOf(arr: any[], obj: ArrayTest): number {
-	var test = typeof obj == "function" ? obj : null
-	for (var i = 0, n = arr.length; i < n; i++) {
+	const test = typeof obj == "function" ? obj : null
+
+	for (let i = 0; i < arr.length; i++) {
 		if (test ? test(arr[i]) : arr[i] === obj) {
 			return i
 		}
@@ -122,8 +121,8 @@ type sortFn = (a: any, b: any) => number
 function firstBy(f1: sortFn, f2: sortFn) {
 	var compare = f2
 		? function (a: any, b: any) {
-				return f1(a, b) || f2(a, b)
-		  }
+			return f1(a, b) || f2(a, b)
+		}
 		: f1
 	// @ts-expect-error
 	compare.thenBy = function (f) {

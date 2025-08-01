@@ -24,3 +24,5 @@
 - extracted `getCircleData()`
 - extracted `getRectangleData()`
 - extracted `getLineGeometry()`
+- extracted `findLayers()`
+
