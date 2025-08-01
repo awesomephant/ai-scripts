@@ -3,7 +3,7 @@ import { aiBoundsToRect, boundsIntersect } from "../common/geometryUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
 import parseObjectName from "./parseObjectName"
-import { ai2HTMLSettings, ArtboardInfo } from "./types"
+import { ai2HTMLSettings, ArtboardGroupForOutput, ArtboardInfo } from "./types"
 
 // Calls cb for every artboard in doc except those with names starting w/ "-"
 function forEachUsableArtboard(doc: Document, cb: (ab: Artboard, i: number) => any) {
@@ -163,6 +163,49 @@ function objectOverlapsAnyArtboard(obj: PageItem, doc: Document) {
 	return hit
 }
 
+/**
+ * get range of container widths that an ab is visible as a [min,max] array
+ * smallest artboard starts with 0, largest artboard ends with Infinity
+ * values are inclusive and rounded
+ * example: [0, 599]  [600, Infinity]
+ */
+function getArtboardVisibilityRange(
+	ab: Artboard,
+	group: ArtboardGroupForOutput,
+	settings: ai2HTMLSettings
+) {
+	var thisWidth = getArtboardWidth(ab)
+	let minWidth: number
+	let nextWidth: number
+
+	// find widths of smallest ab and next widest ab (if any)
+	forEach(getSortedArtboardInfo(group.artboards, settings), function (info) {
+		var w = info.effectiveWidth
+		if (w > thisWidth && (!nextWidth || w < nextWidth)) {
+			nextWidth = w
+		}
+		minWidth = Math.min(w, minWidth || Infinity)
+	})
+	return [thisWidth == minWidth ? 0 : thisWidth, !!nextWidth ? nextWidth - 1 : Infinity]
+}
+
+/**
+ * Get range of widths that an ab can be sized
+ */
+function getArtboardWidthRange(
+	ab: Artboard,
+	group: ArtboardGroupForOutput,
+	settings: ai2HTMLSettings
+) {
+	var responsiveness = getArtboardResponsiveness(ab, settings)
+	var w = getArtboardWidth(ab)
+	var visibleRange = getArtboardVisibilityRange(ab, group, settings)
+	if (responsiveness == "fixed") {
+		return [visibleRange[0] === 0 ? 0 : w, w]
+	}
+	return visibleRange
+}
+
 export {
 	findUsableArtboards,
 	forEachUsableArtboard,
@@ -182,5 +225,7 @@ export {
 	calcProgressBarSteps,
 	getArtboardUniqueName,
 	objectOverlapsArtboard,
-	objectOverlapsAnyArtboard
+	objectOverlapsAnyArtboard,
+	getArtboardVisibilityRange,
+	getArtboardWidthRange
 }

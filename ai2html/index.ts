@@ -83,7 +83,9 @@ import {
 	getArtboardName,
 	getArtboardResponsiveness,
 	getArtboardUniqueName,
+	getArtboardVisibilityRange,
 	getArtboardWidth,
+	getArtboardWidthRange,
 	getDocumentArtboardName,
 	getGroupContainerId,
 	getLayerName,
@@ -722,44 +724,6 @@ function main() {
 	// ai2html AI document reading functions
 	// ======================================
 
-	// get range of container widths that an ab is visible as a [min,max] array
-	// smallest artboard starts with 0, largest artboard ends with Infinity
-	// values are inclusive and rounded
-	// example: [0, 599]  [600, Infinity]
-	//
-	function getArtboardVisibilityRange(
-		ab: Artboard,
-		group: ArtboardGroupForOutput,
-		settings: ai2HTMLSettings
-	) {
-		var thisWidth = getArtboardWidth(ab)
-		var minWidth, nextWidth
-		// find widths of smallest ab and next widest ab (if any)
-		forEach(getSortedArtboardInfo(group.artboards, settings), function (info) {
-			var w = info.effectiveWidth
-			if (w > thisWidth && (!nextWidth || w < nextWidth)) {
-				nextWidth = w
-			}
-			minWidth = Math.min(w, minWidth || Infinity)
-		})
-		return [thisWidth == minWidth ? 0 : thisWidth, !!nextWidth ? nextWidth - 1 : Infinity]
-	}
-
-	// Get range of widths that an ab can be sized
-	function getArtboardWidthRange(
-		ab: Artboard,
-		group: ArtboardGroupForOutput,
-		settings: ai2HTMLSettings
-	) {
-		var responsiveness = getArtboardResponsiveness(ab, settings)
-		var w = getArtboardWidth(ab)
-		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
-		if (responsiveness == "fixed") {
-			return [visibleRange[0] === 0 ? 0 : w, w]
-		}
-		return visibleRange
-	}
-
 	function findArtboardIndex(ab: Artboard) {
 		return indexOf(doc.artboards, ab)
 	}
@@ -797,7 +761,7 @@ function main() {
 		app.executeMenuCommand("deselectall")
 	}
 
-	function objectIsHidden(obj) {
+	function objectIsHidden(obj: Layer | PageItem) {
 		var hidden = false
 		while (!hidden && obj && obj.typename != "Document") {
 			if (obj.typename == "Layer") {
