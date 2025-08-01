@@ -50,9 +50,6 @@ import {
 	aiBoundsToRect,
 	boundsAreSimilar,
 	boundsIntersect,
-	getBBoxCenter,
-	getPathBBox,
-	pathPointIsCorner,
 	shiftBounds
 } from "../common/geometryUtils"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
@@ -81,16 +78,13 @@ import {
 	findLargestArtboardIndex,
 	forEachUsableArtboard,
 	getArtboardName,
-	getArtboardResponsiveness,
 	getArtboardUniqueName,
 	getArtboardVisibilityRange,
-	getArtboardWidth,
 	getArtboardWidthRange,
 	getDocumentArtboardName,
 	getGroupContainerId,
 	getLayerName,
 	getRawDocumentName,
-	getSortedArtboardInfo,
 	makeDocumentSlug,
 	makeTmpDocument,
 	objectOverlapsAnyArtboard,
@@ -447,11 +441,6 @@ function main() {
 		forEach(doc.layers, unlockContainer)
 	}
 
-	function unlockObject(obj) {
-		obj.locked = false
-		objectsToRelock.push(obj)
-	}
-
 	// Unlock a layer or group if visible and locked, as well as any locked and visible
 	//   clipping masks
 	// o: GroupItem or Layer
@@ -792,6 +781,7 @@ function main() {
 		if (obj && obj.typename != "Document") {
 			unlockObject(obj.parent)
 			obj.locked = false
+			objectsToRelock.push(obj)
 		}
 	}
 
