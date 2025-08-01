@@ -57,7 +57,7 @@ import getDateTimestamp from "../common/getDateTimestamp"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
-import { unhideLayer, layerIsChildOf, findLayers } from "../common/layerUtils"
+import { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
@@ -727,7 +727,7 @@ function main() {
 	}
 
 	function objectIsHidden(obj: Layer | PageItem) {
-		var hidden = false
+		let hidden = false
 		while (!hidden && obj && obj.typename != "Document") {
 			if (obj.typename == "Layer") {
 				hidden = !obj.visible
@@ -768,33 +768,6 @@ function main() {
 			obj = obj.parent
 		}
 		return opacity * 100
-	}
-
-	// Return array of layer objects, including both PageItems and sublayers, in z order
-	function getSortedLayerItems(lyr: Layer) {
-		var items = toArray(lyr.pageItems).concat(toArray(lyr.layers))
-		if (lyr.layers.length > 0 && lyr.pageItems.length > 0) {
-			// only need to sort if layer contains both layers and page objects
-			items.sort(function (a, b) {
-				return b.absoluteZOrderPosition - a.absoluteZOrderPosition
-			})
-		}
-		return items
-	}
-
-	// a, b: Layer objects
-	function findCommonLayer(a, b) {
-		var p = null
-		if (a == b) {
-			p = a
-		}
-		if (!p && a.parent.typename == "Layer") {
-			p = findCommonLayer(a.parent, b)
-		}
-		if (!p && b.parent.typename == "Layer") {
-			p = findCommonLayer(a, b.parent)
-		}
-		return p
 	}
 
 	function findCommonAncestorLayer(items) {
@@ -982,7 +955,7 @@ function main() {
 
 	// Divide a paragraph (TextRange object) into an array of
 	// data objects describing text strings having the same style.
-	function getParagraphRanges(p) {
+	function getParagraphRanges(p: TextRange) {
 		var segments = []
 		var currRange
 		var prev, curr, c
@@ -996,7 +969,7 @@ function main() {
 				}
 				segments.push(currRange)
 			}
-			if (curr.warning) {
+			if (currRange && curr.warning) {
 				currRange.warning = curr.warning
 			}
 			currRange.text += c.contents

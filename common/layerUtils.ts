@@ -1,3 +1,5 @@
+import { toArray } from "./arrayUtils"
+
 function unhideLayer(layer: any) {
 	while (layer.typename === "Layer") {
 		layer.visible = true
@@ -38,4 +40,33 @@ function findLayers(layers: Layer[], test: (layer: Layer) => boolean): Layer[] {
 	return res.reverse()
 }
 
-export { unhideLayer, layerIsChildOf, findLayers }
+/**
+ * Return array of layer objects, including both PageItems and sublayers, in z order
+ */
+function getSortedLayerItems(l: Layer) {
+	let items = toArray(l.pageItems).concat(toArray(l.layers))
+	if (l.layers.length > 0 && l.pageItems.length > 0) {
+		// only need to sort if layer contains both layers and page objects
+		items.sort((a, b) => {
+			return b.absoluteZOrderPosition - a.absoluteZOrderPosition
+		})
+	}
+	return items
+}
+
+
+function findCommonLayer(a: Layer, b: Layer): Layer {
+	let p = null
+	if (a == b) {
+		p = a
+	}
+	if (!p && a.parent.typename == "Layer") {
+		p = findCommonLayer(a.parent, b)
+	}
+	if (!p && b.parent.typename == "Layer") {
+		p = findCommonLayer(a, b.parent)
+	}
+	return p
+}
+
+export { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer }
