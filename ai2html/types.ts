@@ -78,6 +78,9 @@ export interface ai2HTMLSettings {
 	use_lazy_loader: boolean
 	include_resizer_widths: boolean
 	fonts?: FontRule[]
+	aria_role: string
+	preview_slug: string
+	scoop_slug_from_config_yml: string
 	/**
 	 * container-query resizing
 	 */
@@ -156,4 +159,11 @@ export interface NoColor extends Color {
 }
 export interface CMYKColor extends Color {
 	typename: "CMYKColor"
+}
+
+// render a group of artboards and save to a file
+export interface outputData {
+	html: string
+	js: string
+	css: string
 }

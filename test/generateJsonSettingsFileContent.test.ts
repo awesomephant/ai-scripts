@@ -3,6 +3,7 @@ import generateJsonSettingsFileContent from "../ai2html/generateJsonSettingsFile
 import initJSON from "../common/json2"
 import _Document from "./__mocks__/Document"
 import _Artboard from "./__mocks__/Artboard"
+import { ai2HTMLSettings } from "../ai2html/types"
 
 it("works", () => {
 	const scriptVersion = "123.45.67"
