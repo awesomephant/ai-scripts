@@ -131,6 +131,14 @@ function firstBy(f1: sortFn, f2: sortFn) {
 	return compare
 }
 
+/**
+ * Returns a hashmap value by key with an optional fallback 
+ */
+function getMapValue(map: any, key: keyof typeof map, defaultValue: any) {
+	return map[key] ? map[key] : defaultValue || null
+}
+
+
 export {
 	forEach,
 	find,

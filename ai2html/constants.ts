@@ -1,4 +1,4 @@
-import { ai2HTMLSettings, FontRule } from "./types"
+import { ai2HTMLSettings, AiCssMap, AiHtmlMap, blendModeRule, FontRule, IllustratorCssMapping } from "./types"
 
 const defaultFonts: FontRule[] = [
 	{
@@ -52,24 +52,24 @@ const defaultFonts: FontRule[] = [
 ]
 
 // CSS text-transform equivalents
-const caps = [
-	{ ai: "FontCapsOption.NORMALCAPS", html: "none" },
-	{ ai: "FontCapsOption.ALLCAPS", html: "uppercase" },
-	{ ai: "FontCapsOption.SMALLCAPS", html: "uppercase" }
-]
+const caps = {
+	"FontCapsOption.NORMALCAPS": "none",
+	"FontCapsOption.ALLCAPS": "uppercase",
+	"FontCapsOption.SMALLCAPS": "uppercase"
+}
 
 // CSS text-align equivalents
-const align = [
-	{ ai: "Justification.LEFT", html: "left" },
-	{ ai: "Justification.RIGHT", html: "right" },
-	{ ai: "Justification.CENTER", html: "center" },
-	{ ai: "Justification.FULLJUSTIFY", html: "justify" },
-	{ ai: "Justification.FULLJUSTIFYLASTLINELEFT", html: "justify" },
-	{ ai: "Justification.FULLJUSTIFYLASTLINECENTER", html: "justify" },
-	{ ai: "Justification.FULLJUSTIFYLASTLINERIGHT", html: "justify" }
-]
+const align = {
+	"Justification.LEFT": "left",
+	"Justification.RIGHT": "right",
+	"Justification.CENTER": "center",
+	"Justification.FULLJUSTIFY": "justify",
+	"Justification.FULLJUSTIFYLASTLINELEFT": "justify",
+	"Justification.FULLJUSTIFYLASTLINECENTER": "justify",
+	"Justification.FULLJUSTIFYLASTLINERIGHT": "justify"
+}
 
-const blendModes = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }]
+const blendModes: AiHtmlMap[] = [{ ai: "BlendModes.MULTIPLY", html: "multiply" }]
 
 // list of CSS properties used for translating AI text styles
 // (used for creating a unique identifier for each style)
@@ -96,7 +96,7 @@ const cssTextStyleProperties = [
 
 // These are base settings that are overridden by text block settings in
 // the .ai document and settings contained in ai2html-config.json files
-const defaultSettings: ai2HTMLSettings = {
+const defaultSettings: Partial<ai2HTMLSettings> = {
 	namespace: "g-",
 	settings_version: "",
 	create_promo_image: false,
@@ -167,8 +167,6 @@ const defaultSettings: ai2HTMLSettings = {
 }
 export {
 	defaultFonts,
-	basicCharacterReplacements,
-	extraCharacterReplacements,
 	caps,
 	align,
 	blendModes,

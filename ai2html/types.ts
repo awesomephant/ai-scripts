@@ -2,11 +2,23 @@ export type ImageFormat = "auto" | "png" | "png24" | "jpg" | "svg"
 export type ResponsivenessOption = "fixed" | "dynamic"
 type TextRenderingMethod = "html" | "image"
 
+/**
+ * Rules for converting AI fonts to CSS
+ * vshift shifts text vertically, to compensate for vertical misalignment caused
+ * by a difference between vertical placement in Illustrator (of a system font) and
+ * browsers (of the web font equivalent). vshift values are percentage of font size. //
+ * Positive values correspond to a downward shift.
+ */
 export interface FontRule {
 	aifont: string
 	family: string
 	weight: string
 	style: string
+}
+
+export interface AiHtmlMap {
+	ai: string,
+	html: string
 }
 
 export interface ArtboardGroupForOutput {
@@ -41,13 +53,13 @@ export interface ai2HTMLSettings {
 	 */
 	max_width: number
 	output:
-		| "one-file"
-		| "multiple-files"
-		| "one-file-for-all-artboards" // @deprecated
-		| "one-file-for-all-artboards" // @deprecated
-		| "preview-one-file" // @deprecated
-		| "one-file-per-artboard" // @deprecated
-		| "preview-multiple-files" // @deprecated
+	| "one-file"
+	| "multiple-files"
+	| "one-file-for-all-artboards" // @deprecated
+	| "one-file-for-all-artboards" // @deprecated
+	| "preview-one-file" // @deprecated
+	| "one-file-per-artboard" // @deprecated
+	| "preview-multiple-files" // @deprecated
 	/**
 	 * Defaults to the name of the AI file
 	 */
@@ -61,7 +73,8 @@ export interface ai2HTMLSettings {
 	cache_bust_token?: number
 	create_config_file: boolean
 	scriptVersion: string
-	create_json_config_files: boolean
+	create_json_config_files: boolean,
+	ai2htmlPartial: string,
 	image_width: number
 	grouped_artboards: boolean
 	/**

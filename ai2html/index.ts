@@ -100,6 +100,7 @@ import {
 	defaultSettings
 } from "./constants"
 import extendFontlist from "./extendFontlist"
+import generateContainerQueryCss from "./generateContainerQueryCss"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import generateOutputHtml from "./generateOutputHtml"
 import generatePageCss from "./generatePageCss"
@@ -108,36 +109,23 @@ import getLineGeometry from "./getLineGeometry"
 import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
+import incrementCacheBustToken from "./incrementCacheBustToken"
 import makeResizerScript from "./makeResizerScript"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
 import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
-import type { ai2HTMLSettings, ArtboardGroupForOutput, FontRule, ImageFormat } from "./types"
+import type { ai2HTMLSettings, ArtboardGroupForOutput, blendModeRule, FontRule, ImageFormat, outputData } from "./types"
 import uniqAssetName from "./uniqAssetName"
 import updateSettingsEntry from "./updateSettingsEntry"
 
 function main() {
-	// Enclosing scripts in a named function (and not an anonymous, self-executing
-	// function) has been recommended as a way to minimise intermittent "MRAP" errors.
-	// This advice may be superstitious, need more evidence to decide.
-	// See: https://web.archive.org/web/20181116063129/https://forums.adobe.com/thread/1810764
 	const scriptVersion = "0.123.1"
-
-	// Rules for converting AI fonts to CSS
-	// vshift shifts text vertically, to compensate for vertical misalignment caused
-	// by a difference between vertical placement in Illustrator (of a system font) and
-	// browsers (of the web font equivalent). vshift values are percentage of font size. //
-	// Positive values correspond to a downward shift.
-	let fonts: FontRule[] = [...defaultFonts]
-
 	const cssPrecision = 4
 
-	// ================================
-	// Global variable declarations
-	// ================================
-	// This can be overridden by settings
+	let fonts: FontRule[] = [...defaultFonts]
+
 	let nameSpace: string
 
 	// vars to hold warnings and informational messages at the end
@@ -231,9 +219,6 @@ function main() {
 		message("Your Illustrator file was saved.")
 	}
 
-	// =========================================================
-	// Show alert box, optionally prompt to generate promo image
-	// =========================================================
 	if (errors.length > 0) {
 		showCompletionAlert()
 	} else if (isTrue(docSettings.show_completion_dialog_box)) {
@@ -244,23 +229,17 @@ function main() {
 		if (showPromo) createPromoImage(docSettings)
 	}
 
-	// =================================
-	// ai2html render function
-	// =================================
-
 	function renderDocument(settings: ai2HTMLSettings, textBlockContent) {
 		clearSelection()
 		unlockObjects()
 
-		const masks = findMasks() // identify all clipping masks and their contents
+		// identify all clipping masks and their contents
+		const masks = findMasks()
 		const groups = groupArtboardsForOutput(settings, docSlug, doc)
 
 		if (groups.length === 0) error("No usable artboards were found")
 
 		forEach(groups, (group) => {
-			// TODO: consider if we want to add custom text block code to
-			// each output file. CSS and possibly JS could possibly be added to just one
-			// file.s=
 			renderArtboardGroup(group, masks, settings, textBlockContent)
 		})
 
@@ -281,7 +260,11 @@ function main() {
 		}
 
 		if (settings.cache_bust_token) {
-			incrementCacheBustToken(settings)
+			incrementCacheBustToken(settings, (newToken) => {
+				updateSettingsEntry(doc, "cache_bust_token", newToken, () => {
+					docIsSaved = false
+				})
+			}, warn)
 		}
 	}
 
@@ -369,7 +352,7 @@ function main() {
 				abStyles.push("> div { pointer-events: none; }\r")
 				abStyles.push("> img { pointer-events: none; }\r")
 			}
-			output.css += generateArtboardCss(activeArtboard, group, abStyles, settings)
+			output.css += generateArtboardCss(activeArtboard, group, abStyles, settings, nameSpace)
 		}) // end artboard loop
 
 		//=====================================
@@ -1232,34 +1215,6 @@ function main() {
 		return info
 	}
 
-	// ai: AI justification value
-	function getJustificationCss(ai) {
-		for (var k = 0; k < align.length; k++) {
-			if (ai == align[k].ai) {
-				return align[k].html
-			}
-		}
-		return "initial" // CSS default
-	}
-
-	// ai: AI capitalization value
-	function getCapitalizationCss(ai) {
-		for (var k = 0; k < caps.length; k++) {
-			if (ai == caps[k].ai) {
-				return caps[k].html
-			}
-		}
-		return ""
-	}
-
-	function getBlendModeCss(ai) {
-		for (var k = 0; k < blendModes.length; k++) {
-			if (ai == blendModes[k].ai) {
-				return blendModes[k].html
-			}
-		}
-		return ""
-	}
 
 	function getBlendMode(obj) {
 		// Limitation: returns first found blending mode, ignores any others that
@@ -1301,7 +1256,7 @@ function main() {
 		if ("opacity" in aiStyle) {
 			cssStyle.opacity = roundTo(aiStyle.opacity / 100, cssPrecision)
 		}
-		if (aiStyle.blendMode && (tmp = getBlendModeCss(aiStyle.blendMode))) {
+		if (aiStyle.blendMode && (tmp = getMapValue(blendModes, aiStyle.blendMode, ""))) {
 			cssStyle["mix-blend-mode"] = tmp
 		}
 		if (aiStyle.spaceBefore > 0) {
@@ -1327,10 +1282,10 @@ function main() {
 		// kludge: text-align of rotated text is handled as a special case (see also getTextFrameCss())
 		if (aiStyle.rotated && aiStyle.frameType == "point") {
 			cssStyle["text-align"] = "center"
-		} else if (aiStyle.justification && (tmp = getJustificationCss(aiStyle.justification))) {
+		} else if (aiStyle.justification && (tmp = getMapValue(align, aiStyle.justification, "initial"))) {
 			cssStyle["text-align"] = tmp
 		}
-		if (aiStyle.capitalization && (tmp = getCapitalizationCss(aiStyle.capitalization))) {
+		if (aiStyle.capitalization && (tmp = getMapValue(caps, aiStyle.capitalization, ""))) {
 			cssStyle["text-transform"] = tmp
 		}
 		if (aiStyle.color) {
@@ -1345,7 +1300,7 @@ function main() {
 		return cssStyle
 	}
 
-	function vshiftToPixels(vshift, fontSize) {
+	function vshiftToPixels(vshift: string, fontSize: number) {
 		var i = vshift.indexOf("%")
 		var pct = parseFloat(vshift)
 		var px = (fontSize * pct) / 100
@@ -1353,7 +1308,7 @@ function main() {
 		return roundTo(px, 1) + "px"
 	}
 
-	function textFrameIsRenderable(frame, artboardRect) {
+	function textFrameIsRenderable(frame: TextFrame, artboardRect: Bounds) {
 		var good = true
 		if (!boundsIntersect(frame.visibleBounds, artboardRect)) {
 			good = false
@@ -1435,9 +1390,9 @@ function main() {
 		}
 		// Sort frames top to bottom, left to right.
 		selected.sort(
-			firstBy(function (v1, v2) {
+			firstBy((v1, v2) => {
 				return v2.top - v1.top
-			}).thenBy(function (v1, v2) {
+			}).thenBy((v1, v2) => {
 				return v1.left - v2.left
 			})
 		)
@@ -1474,7 +1429,7 @@ function main() {
 	}
 
 	function getTransformationCss(textFrame, vertAnchorPct) {
-		var matrix = clearMatrixShift(textFrame.matrix)
+		var matrix = clearMatrixShift(textFrame.matrix, app)
 		var horizAnchorPct = 50
 		var transformOrigin = horizAnchorPct + "% " + vertAnchorPct + "%;"
 		var transform =
@@ -2252,17 +2207,6 @@ function main() {
 		return html
 	}
 
-	function incrementCacheBustToken(settings: ai2HTMLSettings) {
-		var c = settings.cache_bust_token || 0
-		if (c < 0) {
-			warn("cache_bust_token should be a positive integer")
-		} else {
-			updateSettingsEntry(doc, "cache_bust_token", +c + 1, () => {
-				docIsSaved = false
-			})
-		}
-	}
-
 	// Create a promo image from the largest usable artboard
 	function createPromoImage(settings: ai2HTMLSettings) {
 		var abIndex = findLargestArtboardIndex(doc)
@@ -2271,7 +2215,7 @@ function main() {
 		const format = getPromoImageFormat(ab, settings)
 		const imgFile = getImageFileName(docSlug + "-promo", format)
 		const outputPath = docPath + imgFile
-		const opts: Partial<exportRasterOptions> = {
+		const opts: exportRasterOptions = {
 			image_width: settings.promo_image_width || 1024,
 			jpg_quality: settings.jpg_quality,
 			png_number_of_colors: settings.png_number_of_colors,
@@ -2357,10 +2301,10 @@ function main() {
 	// that are hidden by masks
 	// items: Optional argument to copy specific layers or items (default is all layers in the doc)
 	// Returns a newly-created document containing artwork to export, or null
-	//   if no image should be created.
+	// if no image should be created.
 	//
 	// TODO: grouped text is copied (but hidden). Avoid copying text in groups, for
-	//   smaller SVG output.
+	// smaller SVG output.
 	function copyArtboardForImageExport(ab, masks, items) {
 		var layerMasks = filter(masks, function (o) {
 			return !!o.layer
@@ -2578,10 +2522,10 @@ function main() {
 		return svg.replace(rxp, replace)
 	}
 
-	function removeImagesInSVG(content, path) {
+	function removeImagesInSVG(content: string, path: string) {
 		var dir = pathSplit(path)[0]
 		var count = 0
-		content = content.replace(/<image[^<]+href="([^"]+)"[^<]+<\/image>/gm, function (match, href) {
+		content = content.replace(/<image[^<]+href="([^"]+)"[^<]+<\/image>/gm, (match, href) => {
 			count++
 			deleteFile(pathJoin(dir, href))
 			return ""
@@ -2642,64 +2586,6 @@ function main() {
 		return html
 	}
 
-	function generateArtboardCss(
-		ab: Artboard,
-		group: ArtboardGroupForOutput,
-		cssRules: string[],
-		settings: ai2HTMLSettings
-	) {
-		const artboardId = "#" + nameSpace + getArtboardUniqueName(ab, settings, docSlug)
-		let css = formatCssRule(artboardId, {
-			position: "relative",
-			overflow: "hidden"
-		})
-
-		if (isTrue(settings.include_resizer_css)) {
-			css += generateContainerQueryCss(ab, artboardId, group, settings)
-		}
-
-		// classes for paragraph and character styles
-		forEach(cssRules, (cssBlock) => {
-			css += artboardId + " " + cssBlock
-		})
-		return css
-	}
-
-	function generateContainerQueryCss(
-		ab: Artboard,
-		abId: string,
-		group: ArtboardGroupForOutput,
-		settings: ai2HTMLSettings
-	) {
-		var css = ""
-		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
-		var isSmallest = visibleRange[0] === 0
-		var isLargest = visibleRange[1] === Infinity
-		var query
-		if (isSmallest && isLargest) {
-			// single artboard: no query needed
-			return ""
-		}
-		// default visibility: smallest ab visible, others hidden
-		// (fallback in case browser doesn't support container queries)
-		if (!isSmallest) {
-			css += formatCssRule(abId, { display: "none" })
-		}
-		// compose container query
-		if (isSmallest) {
-			query = "(width >= " + (visibleRange[1] + 1) + "px)"
-		} else {
-			query = "(width >= " + visibleRange[0] + "px)"
-			if (!isLargest) {
-				query += " and (width < " + (visibleRange[1] + 1) + "px)"
-			}
-		}
-		css += "@container " + getGroupContainerId(nameSpace, group.groupName) + " " + query + " {\r"
-		css += formatCssRule(abId, { display: isSmallest ? "none" : "block" })
-		css += "}\r"
-		return css
-	}
-
 	// Write an HTML page to a file for NYT Preview
 	function outputLocalPreviewPage(
 		textForFile: string,
@@ -2711,7 +2597,6 @@ function main() {
 		var localPreviewHtml = applyTemplate(localPreviewTemplateText, settings)
 		saveTextFile(localPreviewDestination, localPreviewHtml)
 	}
-
 	function addTextBlockContent(output: outputData, content) {
 		if (content.css) {
 			output.css += "\r/* Custom CSS */\r" + content.css.join("\r") + "\r"
