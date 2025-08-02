@@ -54,11 +54,10 @@ import {
 	shiftBounds
 } from "../common/geometryUtils"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
-import getDateTimestamp from "../common/getDateTimestamp"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
-import { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer, findCommonAncestorLayer } from "../common/layerUtils"
+import { findCommonAncestorLayer, findLayers, getSortedLayerItems, layerIsChildOf, unhideLayer } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
@@ -84,7 +83,6 @@ import {
 	getArtboardVisibilityRange,
 	getArtboardWidthRange,
 	getDocumentArtboardName,
-	getGroupContainerId,
 	getLayerName,
 	getRawDocumentName,
 	makeDocumentSlug,
@@ -102,10 +100,9 @@ import {
 	defaultSettings
 } from "./constants"
 import extendFontlist from "./extendFontlist"
-import generateContainerQueryCss from "./generateContainerQueryCss"
+import generateArtboardCss from "./generateArtboardCss"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import generateOutputHtml from "./generateOutputHtml"
-import generatePageCss from "./generatePageCss"
 import getCircleData from "./getCircleData"
 import getComputedOpacity from "./getComputedOpacity"
 import getLineGeometry from "./getLineGeometry"
@@ -113,16 +110,16 @@ import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
 import incrementCacheBustToken from "./incrementCacheBustToken"
-import makeResizerScript from "./makeResizerScript"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
 import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
-import { getCharStyle, getParagraphRanges, getParagraphStyle, textIsRotated } from "./textUtils"
-import type { ai2HTMLSettings, ArtboardGroupForOutput, blendModeRule, exportRasterOptions, FontRule, ImageFormat, outputData } from "./types"
+import { getParagraphRanges, getParagraphStyle, textIsRotated } from "./textUtils"
+import type { ai2HTMLSettings, ArtboardGroupForOutput, exportRasterOptions, FontRule, ImageFormat, outputData } from "./types"
 import uniqAssetName from "./uniqAssetName"
 import updateSettingsEntry from "./updateSettingsEntry"
+import validateSettings from "./validateSettings"
 
 function main() {
 	const scriptVersion = "0.123.1"
@@ -148,11 +145,11 @@ function main() {
 	let docPath: string
 	let docSlug: string
 	let docIsSaved: boolean
-	var progressWindow: ProgressWindow
+	let progressWindow: ProgressWindow
+
 
 	// TODO (max) We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
-
 	// Exit on invalid entry conditions
 	try {
 		if (!isTestedIllustratorVersion(app.version)) {
@@ -231,6 +228,8 @@ function main() {
 			isTrue(docSettings.write_image_files) && isTrue(docSettings.create_promo_image)
 		var showPromo = showCompletionAlert(promptForPromo)
 		if (showPromo) createPromoImage(docSettings)
+
+		// Done
 	}
 
 	function renderDocument(settings: ai2HTMLSettings, textBlockContent) {
@@ -300,7 +299,8 @@ function main() {
 			// Convert text objects
 			// ========================
 
-			progressWindow.setTitle(docArtboardName + ": Generating text...")
+			progressWindow.setTitle(`${docArtboardName}: Generating text...`)
+
 			if (abSettings.image_only || settings.render_text_as == "image") {
 				// don't convert text objects to HTML
 				textFrames = []
@@ -317,7 +317,7 @@ function main() {
 			// ==========================
 
 			if (isTrue(settings.write_image_files)) {
-				progressWindow.setTitle(docArtboardName + ": Capturing image...")
+				progressWindow.setTitle(`${docArtboardName}: Capturing image...`)
 				imageData = convertArtItems(activeArtboard, textFrames, masks, settings)
 			} else {
 				imageData = { html: "" }
@@ -326,8 +326,8 @@ function main() {
 			if (specialData) {
 				imageData.html =
 					specialData.video + specialData.html_before + imageData.html + specialData.html_after
-				forEach(specialData.layers, function (lyr) {
-					lyr.visible = true
+				forEach(specialData.layers, (layer) => {
+					layer.visible = true
 				})
 				if (specialData.video && !isTrue(settings.png_transparent)) {
 					warn("Background videos may be covered up without png_transparent:true")
@@ -489,8 +489,8 @@ function main() {
 		})
 	}
 
-	// Import program settings and custom html, css and js code from specially
-	// formatted text blocks
+	// Import program settings and custom html, css and js
+	// code from specially formatted text blocks
 	function initSpecialTextBlocks() {
 		const rxp: RegExp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
 		var settings: Partial<ai2HTMLSettings> = {}
@@ -580,15 +580,8 @@ function main() {
 			}
 		}
 
-		validateDocumentSettings(settings)
+		validateSettings(settings, warn)
 		return settings
-	}
-
-	// Trigger errors and warnings for some common problems
-	function validateDocumentSettings(settings: ai2HTMLSettings) {
-		if (!(settings.responsiveness == "fixed" || settings.responsiveness == "dynamic")) {
-			warn('Unsupported "responsiveness" setting: ' + (settings.responsiveness || "[]"))
-		}
 	}
 
 	function extendSettings(
