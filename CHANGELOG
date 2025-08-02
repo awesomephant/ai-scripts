@@ -25,3 +25,4 @@
 - extracted `getRectangleData()`
 - extracted `getLineGeometry()`
 - extracted `generateOutputHtml()`
+- extracted `findLayers()`

@@ -57,7 +57,7 @@ import getDateTimestamp from "../common/getDateTimestamp"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
-import { unhideLayer, layerIsChildOf } from "../common/layerUtils"
+import { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
@@ -728,30 +728,6 @@ function main() {
 		return indexOf(doc.artboards, ab)
 	}
 
-	function findLayers(layers: Layer[], test: (layer: Layer) => boolean) {
-		var retn = []
-		forEach(layers, function (lyr) {
-			var found = null
-			if (objectIsHidden(lyr)) {
-				// skip
-			} else if (!test || test(lyr)) {
-				found = [lyr]
-			} else if (lyr.layers.length > 0) {
-				// examine sublayers (only if layer didn't test positive)
-				found = findLayers(lyr.layers, test)
-			}
-			if (found) {
-				retn = retn ? retn.concat(found) : found
-			}
-		})
-		// Reverse the order of found layers:
-		// Layers seem to be fetched from top to bottom in the AI layer stack...
-		// We want separately-rendered layers (like :svg or :symbol) to be
-		// converted to HTML from bottom to top
-		retn.reverse()
-		return retn
-	}
-
 	function clearSelection() {
 		// setting selection to null doesn't always work:
 		// it doesn't deselect text range selection and also seems to interfere with
@@ -762,7 +738,7 @@ function main() {
 	}
 
 	function objectIsHidden(obj: Layer | PageItem) {
-		var hidden = false
+		let hidden = false
 		while (!hidden && obj && obj.typename != "Document") {
 			if (obj.typename == "Layer") {
 				hidden = !obj.visible
@@ -803,33 +779,6 @@ function main() {
 			obj = obj.parent
 		}
 		return opacity * 100
-	}
-
-	// Return array of layer objects, including both PageItems and sublayers, in z order
-	function getSortedLayerItems(lyr: Layer) {
-		var items = toArray(lyr.pageItems).concat(toArray(lyr.layers))
-		if (lyr.layers.length > 0 && lyr.pageItems.length > 0) {
-			// only need to sort if layer contains both layers and page objects
-			items.sort(function (a, b) {
-				return b.absoluteZOrderPosition - a.absoluteZOrderPosition
-			})
-		}
-		return items
-	}
-
-	// a, b: Layer objects
-	function findCommonLayer(a, b) {
-		var p = null
-		if (a == b) {
-			p = a
-		}
-		if (!p && a.parent.typename == "Layer") {
-			p = findCommonLayer(a.parent, b)
-		}
-		if (!p && b.parent.typename == "Layer") {
-			p = findCommonLayer(a, b.parent)
-		}
-		return p
 	}
 
 	function findCommonAncestorLayer(items) {
@@ -1017,7 +966,7 @@ function main() {
 
 	// Divide a paragraph (TextRange object) into an array of
 	// data objects describing text strings having the same style.
-	function getParagraphRanges(p) {
+	function getParagraphRanges(p: TextRange) {
 		var segments = []
 		var currRange
 		var prev, curr, c
@@ -1031,7 +980,7 @@ function main() {
 				}
 				segments.push(currRange)
 			}
-			if (curr.warning) {
+			if (currRange && curr.warning) {
 				currRange.warning = curr.warning
 			}
 			currRange.text += c.contents
@@ -1223,9 +1172,9 @@ function main() {
 			if (range.aiStyle.aifont && !range.cssStyle["font-family"]) {
 				warnOnce(
 					"Missing a rule for converting font: " +
-						range.aiStyle.aifont +
-						". Sample text: " +
-						truncateString(range.text, 35),
+					range.aiStyle.aifont +
+					". Sample text: " +
+					truncateString(range.text, 35),
 					range.aiStyle.aifont
 				)
 			}
@@ -1551,7 +1500,7 @@ function main() {
 		if (scaleX != 100 || scaleY != 100) {
 			warn(
 				"Vertical or horizontal text scaling will be lost. Affected text: " +
-					truncateString(textFrame.contents, 35)
+				truncateString(textFrame.contents, 35)
 			)
 		}
 
@@ -2251,8 +2200,8 @@ function main() {
 		if (formats[0] != "auto" && formats[0] != "jpg" && artboardContainsVisibleRasterImage(ab)) {
 			warnOnce(
 				"An artboard contains a raster image -- consider exporting to jpg instead of " +
-					formats[0] +
-					"."
+				formats[0] +
+				"."
 			)
 		}
 
@@ -2385,8 +2334,8 @@ function main() {
 				imageScale = MAX_JPG_SCALE
 				warn(
 					imgPath.split("/").pop() +
-						" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
-						" If the file needs to be larger, change the image format to png which does not appear to have limits."
+					" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
+					" If the file needs to be larger, change the image format to png which does not appear to have limits."
 				)
 			}
 			fileType = ExportType.JPEG
@@ -2414,8 +2363,8 @@ function main() {
 	//   smaller SVG output.
 	function copyArtboardForImageExport(ab, masks, items) {
 		var layerMasks = filter(masks, function (o) {
-				return !!o.layer
-			}),
+			return !!o.layer
+		}),
 			artboardBounds = ab.artboardRect,
 			sourceItems = items || toArray(doc.layers),
 			destLayer = doc.layers.add(),
