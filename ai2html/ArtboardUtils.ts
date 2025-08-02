@@ -1,4 +1,4 @@
-import { forEach } from "../common/arrayUtils"
+import { forEach, indexOf } from "../common/arrayUtils"
 import { aiBoundsToRect, boundsIntersect } from "../common/geometryUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
@@ -206,6 +206,10 @@ function getArtboardWidthRange(
 	return visibleRange
 }
 
+function findArtboardIndex(ab: Artboard, doc: Document) {
+	return indexOf(doc.artboards, ab)
+}
+
 export {
 	findUsableArtboards,
 	forEachUsableArtboard,
@@ -227,5 +231,6 @@ export {
 	objectOverlapsArtboard,
 	objectOverlapsAnyArtboard,
 	getArtboardVisibilityRange,
-	getArtboardWidthRange
+	getArtboardWidthRange,
+	findArtboardIndex
 }

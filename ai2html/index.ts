@@ -38,6 +38,7 @@ import {
 	checkForOutputFolder,
 	deleteFile,
 	fileExists,
+	getImageFolder,
 	getScriptDirectory,
 	pathJoin,
 	pathSplit,
@@ -57,7 +58,7 @@ import getDateTimestamp from "../common/getDateTimestamp"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
-import { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer } from "../common/layerUtils"
+import { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer, findCommonAncestorLayer } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
@@ -75,6 +76,7 @@ import {
 import {
 	calcProgressBarSteps,
 	clearMatrixShift,
+	findArtboardIndex,
 	findLargestArtboardIndex,
 	forEachUsableArtboard,
 	getArtboardName,
@@ -105,6 +107,7 @@ import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import generateOutputHtml from "./generateOutputHtml"
 import generatePageCss from "./generatePageCss"
 import getCircleData from "./getCircleData"
+import getComputedOpacity from "./getComputedOpacity"
 import getLineGeometry from "./getLineGeometry"
 import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
@@ -116,7 +119,8 @@ import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
-import type { ai2HTMLSettings, ArtboardGroupForOutput, blendModeRule, FontRule, ImageFormat, outputData } from "./types"
+import { getCharStyle, getParagraphRanges, getParagraphStyle, textIsRotated } from "./textUtils"
+import type { ai2HTMLSettings, ArtboardGroupForOutput, blendModeRule, exportRasterOptions, FontRule, ImageFormat, outputData } from "./types"
 import uniqAssetName from "./uniqAssetName"
 import updateSettingsEntry from "./updateSettingsEntry"
 
@@ -277,7 +281,7 @@ function main() {
 		const output: outputData = { html: "", js: "", css: "" }
 
 		forEach(group.artboards, (activeArtboard: Artboard) => {
-			var abIndex = findArtboardIndex(activeArtboard)
+			var abIndex = findArtboardIndex(activeArtboard, doc)
 			var abSettings = parseObjectName(activeArtboard.name)
 			var docArtboardName = getDocumentArtboardName(activeArtboard, docSlug)
 			var textFrames, textData, imageData, specialData
@@ -428,11 +432,6 @@ function main() {
 			warn(msg)
 			oneTimeWarnings.push(id)
 		}
-	}
-
-	// Unlock containers and clipping masks
-	function unlockObjects() {
-		forEach(doc.layers, unlockContainer)
 	}
 
 	// Unlock a layer or group if visible and locked, as well as any locked and visible
@@ -703,14 +702,6 @@ function main() {
 		}
 	}
 
-	// ======================================
-	// ai2html AI document reading functions
-	// ======================================
-
-	function findArtboardIndex(ab: Artboard) {
-		return indexOf(doc.artboards, ab)
-	}
-
 	function clearSelection() {
 		// setting selection to null doesn't always work:
 		// it doesn't deselect text range selection and also seems to interfere with
@@ -753,39 +744,6 @@ function main() {
 			obj.locked = false
 			objectsToRelock.push(obj)
 		}
-	}
-
-	function getComputedOpacity(obj) {
-		var opacity = 1
-		while (obj && obj.typename != "Document") {
-			opacity *= obj.opacity / 100
-			obj = obj.parent
-		}
-		return opacity * 100
-	}
-
-	function findCommonAncestorLayer(items) {
-		var layers = [],
-			ancestorLyr = null,
-			item
-		for (var i = 0, n = items.length; i < n; i++) {
-			item = items[i]
-			if (item.parent.typename != "Layer" || contains(layers, item.parent)) {
-				continue
-			}
-			// remember layer, to avoid redundant searching (is this worthwhile?)
-			layers.push(item.parent)
-			if (!ancestorLyr) {
-				ancestorLyr = item.parent
-			} else {
-				ancestorLyr = findCommonLayer(ancestorLyr, item.parent)
-				if (!ancestorLyr) {
-					// Failed to find a common ancestor
-					return null
-				}
-			}
-		}
-		return ancestorLyr
 	}
 
 	// Test if a mask can be ignored
@@ -880,44 +838,11 @@ function main() {
 	// ai2html text functions
 	// ==============================
 
-	function textIsRotated(textFrame: TextFrame) {
-		var m = textFrame.matrix
-		var angle
-		if (m.mValueA == 1 && m.mValueB === 0 && m.mValueC === 0 && m.mValueD == 1) return false
-		angle = (Math.atan2(m.mValueB, m.mValueA) * 180) / Math.PI
-		// Treat text rotated by < 1 degree as unrotated.
-		// (It's common to accidentally rotate text and then try to unrotate manually).
-		return Math.abs(angle) > 1
-	}
-
-	function hideTextFrame(textFrame) {
+	function hideTextFrame(textFrame: TextFrame) {
 		textFramesToUnhide.push(textFrame)
 		textFrame.hidden = true
 	}
 
-	// Parse an AI CharacterAttributes object
-	function getCharStyle(c) {
-		var o = aiColorToCss(c.fillColor)
-		var caps = String(c.capitalization)
-		o.aifont = c.textFont.name
-		o.size = Math.round(c.size)
-		o.capitalization = caps == "FontCapsOption.NORMALCAPS" ? "" : caps
-		o.tracking = c.tracking
-		o.superscript = c.baselinePosition == FontBaselineOption.SUPERSCRIPT
-		o.subscript = c.baselinePosition == FontBaselineOption.SUBSCRIPT
-		return o
-	}
-
-	// p: an AI paragraph (appears to be a TextRange object with mixed-in ParagraphAttributes)
-	// opacity: Computed opacity (0-100) of TextFrame containing this pg
-	function getParagraphStyle(p) {
-		return {
-			leading: Math.round(p.leading),
-			spaceBefore: Math.round(p.spaceBefore),
-			spaceAfter: Math.round(p.spaceAfter),
-			justification: String(p.justification) // coerce from object
-		}
-	}
 
 	// s: object containing CSS text properties
 	function getStyleKey(s) {
@@ -946,32 +871,6 @@ function main() {
 		classes.push(o)
 		return o.classname
 	}
-
-	// Divide a paragraph (TextRange object) into an array of
-	// data objects describing text strings having the same style.
-	function getParagraphRanges(p: TextRange) {
-		var segments = []
-		var currRange
-		var prev, curr, c
-		for (var i = 0, n = p.characters.length; i < n; i++) {
-			c = p.characters[i]
-			curr = getCharStyle(c)
-			if (!prev || objectDiff(curr, prev)) {
-				currRange = {
-					text: "",
-					aiStyle: curr
-				}
-				segments.push(currRange)
-			}
-			if (currRange && curr.warning) {
-				currRange.warning = curr.warning
-			}
-			currRange.text += c.contents
-			prev = curr
-		}
-		return segments
-	}
-
 	// Convert a TextFrame to an array of data records for each of the paragraphs
 	// contained in the TextFrame.
 	function importTextFrameParagraphs(textFrame: TextFrame) {
@@ -1063,7 +962,7 @@ function main() {
 		var pgStyles = []
 		var charStyles = []
 		var baseStyle = deriveTextStyleCss(frameData)
-		var idPrefix = nameSpace + "ai" + findArtboardIndex(ab) + "-"
+		var idPrefix = nameSpace + "ai" + findArtboardIndex(ab, doc) + "-"
 		var abBox = aiBoundsToRect(ab.artboardRect)
 		var divs = map(frameData, function (obj, i) {
 			var frame = textFrames[i]
@@ -1935,7 +1834,7 @@ function main() {
 		var hiddenLayers = []
 		var i
 
-		checkForOutputFolder(getImageFolder(settings), "image_output_path", message, warn)
+		checkForOutputFolder(getImageFolder(settings, docPath), "image_output_path", message, warn)
 
 		if (hideTextFrames) {
 			for (i = 0; i < textFrameCount; i++) {
@@ -2010,17 +1909,13 @@ function main() {
 		return { html: html }
 	}
 
-	function findTaggedLayers(tag) {
-		function test(lyr) {
-			return tag && parseObjectName(lyr.name)[tag]
+	function findTaggedLayers(tag: string) {
+		function test(layer: Layer) {
+			return tag && parseObjectName(layer.name)[tag]
 		}
 		return findLayers(doc.layers, test) || []
 	}
 
-	function getImageFolder(settings) {
-		// return pathJoin(docPath, settings.html_output_path, settings.image_output_path);
-		return pathJoin(docPath, settings.image_output_path)
-	}
 
 	function getImageFileName(name, fmt) {
 		// for file extension, convert png24 -> png; other format names are same as extension
@@ -2231,13 +2126,6 @@ function main() {
 	// imgPath: full path of output file
 	// ab: assumed to be active artboard
 	// format: png, png24, jpg
-	interface exportRasterOptions {
-		image_width: number
-		use_2x_images_if_possible: boolean
-		png_transparent: boolean
-		png_number_of_colors: number
-		jpg_quality: number
-	}
 	function exportRasterImage(
 		imgPath: string,
 		ab: Artboard,

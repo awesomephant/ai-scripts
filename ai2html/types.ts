@@ -180,3 +180,11 @@ export interface outputData {
 	js: string
 	css: string
 }
+
+export interface exportRasterOptions {
+	image_width: number
+	use_2x_images_if_possible: boolean
+	png_transparent: boolean
+	png_number_of_colors: number
+	jpg_quality: number
+}

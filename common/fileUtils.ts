@@ -45,7 +45,7 @@ function readFile(fpath: string, onerror?: (err: string) => any, enc?: string) {
 function readTextFile(fpath: string): string {
 	// This function used to use File#eof and File#readln(), but
 	// that failed to read the last line when missing a final newline.
-	return readFile(fpath, () => {}, "UTF-8") || ""
+	return readFile(fpath, () => { }, "UTF-8") || ""
 }
 
 function saveTextFile(dest: string, contents: string) {
@@ -131,6 +131,11 @@ function pathSplit(path: string) {
 function getScriptDirectory() {
 	return new File($.fileName).parent
 }
+function getImageFolder(settings: ai2HTMLSettings, docPath: string) {
+	// return pathJoin(docPath, settings.html_output_path, settings.image_output_path);
+	return pathJoin(docPath, settings.image_output_path)
+}
+
 
 export {
 	folderExists,
@@ -144,5 +149,6 @@ export {
 	readFile,
 	readJsonFile,
 	readYamlConfigFile,
-	checkForOutputFolder
+	checkForOutputFolder,
+	getImageFolder
 }

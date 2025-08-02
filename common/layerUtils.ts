@@ -1,4 +1,4 @@
-import { toArray } from "./arrayUtils"
+import { contains, forEach, toArray } from "./arrayUtils"
 
 function unhideLayer(layer: any) {
 	while (layer.typename === "Layer") {
@@ -55,7 +55,7 @@ function getSortedLayerItems(l: Layer) {
 }
 
 
-function findCommonLayer(a: Layer, b: Layer): Layer {
+function findCommonLayer(a: Layer, b: Layer): Layer | null {
 	let p = null
 	if (a == b) {
 		p = a
@@ -69,4 +69,30 @@ function findCommonLayer(a: Layer, b: Layer): Layer {
 	return p
 }
 
-export { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer }
+function findCommonAncestorLayer(items): Layer | null {
+	var layers = [],
+		ancestorLyr = null,
+		item
+	for (var i = 0, n = items.length; i < n; i++) {
+		item = items[i]
+		if (item.parent.typename != "Layer" || contains(layers, item.parent)) {
+			continue
+		}
+		// remember layer, to avoid redundant searching (is this worthwhile?)
+		layers.push(item.parent)
+		if (!ancestorLyr) {
+			ancestorLyr = item.parent
+		} else {
+			ancestorLyr = findCommonLayer(ancestorLyr, item.parent)
+			if (!ancestorLyr) {
+				// Failed to find a common ancestor
+				return null
+			}
+		}
+	}
+	return ancestorLyr
+}
+
+
+
+export { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer, findCommonAncestorLayer }
