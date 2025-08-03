@@ -26,6 +26,7 @@ import {
 	find,
 	firstBy,
 	forEach,
+	getMapValue,
 	indexOf,
 	map,
 	objectDiff,
@@ -57,14 +58,19 @@ import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
 import { cleanHtmlTags, injectCSSinSVG } from "../common/htmlUtils"
 import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
-import { findCommonAncestorLayer, findLayers, getSortedLayerItems, layerIsChildOf, unhideLayer } from "../common/layerUtils"
+import {
+	findCommonAncestorLayer,
+	findLayers,
+	getSortedLayerItems,
+	layerIsChildOf,
+	unhideLayer
+} from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
 import roundTo from "../common/roundTo"
 import {
 	cleanHtmlText,
-	encodeHtmlEntities,
 	makeKeyword,
 	makeList,
 	stringToLines,
@@ -72,6 +78,7 @@ import {
 	trim,
 	truncateString
 } from "../common/stringUtils"
+import { unlockObject, unlockObjects } from "../common/unlockObject"
 import {
 	calcProgressBarSteps,
 	clearMatrixShift,
@@ -80,8 +87,6 @@ import {
 	forEachUsableArtboard,
 	getArtboardName,
 	getArtboardUniqueName,
-	getArtboardVisibilityRange,
-	getArtboardWidthRange,
 	getDocumentArtboardName,
 	getLayerName,
 	getRawDocumentName,
@@ -114,12 +119,20 @@ import groupArtboardsForOutput from "./groupArtboardForOutput"
 import incrementCacheBustToken from "./incrementCacheBustToken"
 import { error } from "./logUtils"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
+import objectIsHidden from "./objectIsHidden"
 import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
 import { getParagraphRanges, getParagraphStyle, textIsRotated } from "./textUtils"
-import type { ai2HTMLSettings, ArtboardGroupForOutput, exportRasterOptions, FontRule, ImageFormat, outputData } from "./types"
+import type {
+	ai2HTMLSettings,
+	ArtboardGroupForOutput,
+	exportRasterOptions,
+	FontRule,
+	ImageFormat,
+	outputData
+} from "./types"
 import uniqAssetName from "./uniqAssetName"
 import updateSettingsEntry from "./updateSettingsEntry"
 import validateSettings from "./validateSettings"
@@ -156,6 +169,7 @@ function main() {
 			warn("Ai2html has not been tested on this version of Illustrator.")
 		}
 		verifyEntryConditions(app)
+
 		// initialize script settings
 		doc = app.activeDocument
 		docPath = doc.path + "/"
@@ -175,7 +189,7 @@ function main() {
 			steps: calcProgressBarSteps(doc)
 		})
 
-		validateArtboardNames(docSettings) // warn about duplicate artboard names
+		validateArtboardNames(docSettings)
 		renderDocument(docSettings, textBlockData.code)
 	} catch (e: any) {
 		errors.push(formatError(e))
@@ -205,7 +219,7 @@ function main() {
 
 	function renderDocument(settings: ai2HTMLSettings, textBlockContent) {
 		clearSelection()
-		unlockObjects()
+		objectsToRelock = [...objectsToRelock, ...unlockObjects(doc)]
 
 		// identify all clipping masks and their contents
 		const masks = findMasks()
@@ -234,11 +248,15 @@ function main() {
 		}
 
 		if (settings.cache_bust_token) {
-			incrementCacheBustToken(settings, (newToken) => {
-				updateSettingsEntry(doc, "cache_bust_token", newToken, () => {
-					docIsSaved = false
-				})
-			}, warn)
+			incrementCacheBustToken(
+				settings,
+				(newToken) => {
+					updateSettingsEntry(doc, "cache_bust_token", newToken, () => {
+						docIsSaved = false
+					})
+				},
+				warn
+			)
 		}
 	}
 
@@ -399,38 +417,6 @@ function main() {
 		}
 	}
 
-	// Unlock a layer or group if visible and locked, as well as any locked and visible
-	//   clipping masks
-	// o: GroupItem or Layer
-	function unlockContainer(o) {
-		var type = o.typename
-		var i, item, pathCount
-		if (o.hidden === true || o.visible === false) return
-		if (o.locked) {
-			unlockObject(o)
-		}
-
-		// unlock locked clipping paths (so contents can be selected later)
-		// optimization: Layers containing hundreds or thousands of paths are unlikely
-		//    to contain a clipping mask and are slow to scan -- skip these
-		pathCount = o.pathItems.length
-		if ((type == "Layer" && pathCount < 500) || (type == "GroupItem" && o.clipped)) {
-			for (i = 0; i < pathCount; i++) {
-				item = o.pathItems[i]
-				if (!item.hidden && item.clipping && item.locked) {
-					unlockObject(item)
-					break
-				}
-			}
-		}
-
-		// recursively unlock sub-layers and groups
-		forEach(o.groupItems, unlockContainer)
-		if (o.typename == "Layer") {
-			forEach(o.layers, unlockContainer)
-		}
-	}
-
 	// ==================================
 	// ai2html program state and settings
 	// ==================================
@@ -500,7 +486,7 @@ function main() {
 				// An error will be thrown if trying to hide a text frame inside a
 				// locked layer. Solution: unlock any locked parent layers.
 				if (objectIsLocked(thisFrame)) {
-					unlockObject(thisFrame)
+					objectsToRelock = [...objectsToRelock, ...unlockObject(thisFrame)]
 				}
 				hideTextFrame(thisFrame)
 			}
@@ -669,22 +655,6 @@ function main() {
 		app.executeMenuCommand("deselectall")
 	}
 
-	function objectIsHidden(obj: Layer | PageItem) {
-		let hidden = false
-		while (!hidden && obj && obj.typename != "Document") {
-			if (obj.typename == "Layer") {
-				hidden = !obj.visible
-			} else {
-				hidden = obj.hidden
-			}
-			// The following line used to throw an MRAP error if the document
-			// contained a raster opacity mask... please file a GitHub issue if the
-			// problem recurs.
-			obj = obj.parent
-		}
-		return hidden
-	}
-
 	function objectIsLocked(obj) {
 		while (obj && obj.typename != "Document") {
 			if (obj.locked) {
@@ -693,15 +663,6 @@ function main() {
 			obj = obj.parent
 		}
 		return false
-	}
-
-	function unlockObject(obj) {
-		// unlock parent first, to avoid "cannot be modified" error
-		if (obj && obj.typename != "Document") {
-			unlockObject(obj.parent)
-			obj.locked = false
-			objectsToRelock.push(obj)
-		}
 	}
 
 	// Test if a mask can be ignored
@@ -800,7 +761,6 @@ function main() {
 		textFramesToUnhide.push(textFrame)
 		textFrame.hidden = true
 	}
-
 
 	// s: object containing CSS text properties
 	function getStyleKey(s) {
@@ -1012,9 +972,9 @@ function main() {
 			if (range.aiStyle.aifont && !range.cssStyle["font-family"]) {
 				warnOnce(
 					"Missing a rule for converting font: " +
-					range.aiStyle.aifont +
-					". Sample text: " +
-					truncateString(range.text, 35),
+						range.aiStyle.aifont +
+						". Sample text: " +
+						truncateString(range.text, 35),
 					range.aiStyle.aifont
 				)
 			}
@@ -1071,7 +1031,6 @@ function main() {
 		}
 		return info
 	}
-
 
 	function getBlendMode(obj) {
 		// Limitation: returns first found blending mode, ignores any others that
@@ -1139,7 +1098,10 @@ function main() {
 		// kludge: text-align of rotated text is handled as a special case (see also getTextFrameCss())
 		if (aiStyle.rotated && aiStyle.frameType == "point") {
 			cssStyle["text-align"] = "center"
-		} else if (aiStyle.justification && (tmp = getMapValue(align, aiStyle.justification, "initial"))) {
+		} else if (
+			aiStyle.justification &&
+			(tmp = getMapValue(align, aiStyle.justification, "initial"))
+		) {
 			cssStyle["text-align"] = tmp
 		}
 		if (aiStyle.capitalization && (tmp = getMapValue(caps, aiStyle.capitalization, ""))) {
@@ -1308,7 +1270,7 @@ function main() {
 		if (scaleX != 100 || scaleY != 100) {
 			warn(
 				"Vertical or horizontal text scaling will be lost. Affected text: " +
-				truncateString(textFrame.contents, 35)
+					truncateString(textFrame.contents, 35)
 			)
 		}
 
@@ -1399,13 +1361,19 @@ function main() {
 		} else if (v_align == "middle") {
 			// https://css-tricks.com/centering-in-the-unknown/
 			// TODO: consider: http://zerosixthree.se/vertical-align-anything-with-just-3-lines-of-css/
-			styles += "top:" + formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height, cssPrecision) + ";"
+			styles +=
+				"top:" +
+				formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height, cssPrecision) +
+				";"
 			styles += "margin-top:-" + roundTo(marginTopPx + htmlBox.height / 2, 1) + "px;"
 		} else {
 			styles += "top:" + formatCssPct(htmlT, abBox.height, cssPrecision) + ";"
 		}
 		if (alignment == "right") {
-			styles += "right:" + formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width, cssPrecision) + ";"
+			styles +=
+				"right:" +
+				formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width, cssPrecision) +
+				";"
 		} else if (alignment == "center") {
 			styles += "left:" + formatCssPct(htmlL + htmlBox.width / 2, abBox.width, cssPrecision) + ";"
 			// setting a negative left margin for horizontal placement of centered text
@@ -1796,13 +1764,6 @@ function main() {
 			}
 		}
 
-		// WIP
-		// forEach(findTaggedLayers('svg-symbol'), function(lyr) {
-		//   var obj = exportSvgSymbols(lyr, activeArtboard, masks);
-		//   html += obj.html;
-		//   hiddenItems = hiddenItems.concat(obj.items);
-		// });
-
 		// Symbols in :symbol layers are not scaled
 		forEach(findTaggedLayers("symbol"), function (lyr) {
 			var obj = exportSymbols(lyr, activeArtboard, masks, { scaled: false })
@@ -1870,7 +1831,6 @@ function main() {
 		return findLayers(doc.layers, test) || []
 	}
 
-
 	function getImageFileName(name, fmt) {
 		// for file extension, convert png24 -> png; other format names are same as extension
 		return name + "." + fmt.substring(0, 3)
@@ -1884,7 +1844,7 @@ function main() {
 	// Capture and save an image to the filesystem and return html embed code
 	function exportImage(imgName, format, ab, masks, layer, settings) {
 		var imgFile = getImageFileName(imgName, format)
-		var outputPath = pathJoin(getImageFolder(settings), imgFile)
+		var outputPath = pathJoin(getImageFolder(settings, docPath), imgFile)
 		var imgId = getImageId(imgName)
 
 		// remove artboard size (careful not to remove deduplication annotations)
@@ -2004,8 +1964,8 @@ function main() {
 		if (formats[0] != "auto" && formats[0] != "jpg" && artboardContainsVisibleRasterImage(ab)) {
 			warnOnce(
 				"An artboard contains a raster image -- consider exporting to jpg instead of " +
-				formats[0] +
-				"."
+					formats[0] +
+					"."
 			)
 		}
 
@@ -2085,8 +2045,8 @@ function main() {
 				imageScale = MAX_JPG_SCALE
 				warn(
 					imgPath.split("/").pop() +
-					" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
-					" If the file needs to be larger, change the image format to png which does not appear to have limits."
+						" was output at a smaller size than desired because of a limit on jpg exports in Illustrator." +
+						" If the file needs to be larger, change the image format to png which does not appear to have limits."
 				)
 			}
 			fileType = ExportType.JPEG
@@ -2112,10 +2072,10 @@ function main() {
 	//
 	// TODO: grouped text is copied (but hidden). Avoid copying text in groups, for
 	// smaller SVG output.
-	function copyArtboardForImageExport(ab, masks, items) {
+	function copyArtboardForImageExport(ab, masks, items?: Layer[]) {
 		var layerMasks = filter(masks, function (o) {
-			return !!o.layer
-		}),
+				return !!o.layer
+			}),
 			artboardBounds = ab.artboardRect,
 			sourceItems = items || toArray(doc.layers),
 			destLayer = doc.layers.add(),
@@ -2250,7 +2210,7 @@ function main() {
 		}
 	}
 
-	// Returns true if a file was created or else false (because svg document was empty);
+	// Returns true if a file was created or else false (because svg document was empty)
 	function exportSVG(ofile: string, ab: Artboard, masks, items, settings: ai2HTMLSettings) {
 		// Illustrator's SVG output contains all objects in a document (it doesn't
 		// clip to the current artboard), so we copy artboard objects to a temporary
@@ -2274,7 +2234,6 @@ function main() {
 
 		exportDoc.exportFile(new File(ofile), ExportType.SVG, opts)
 		doc.activate()
-		//exportDoc.pageItems.removeAll();
 		exportDoc.close(SaveOptions.DONOTSAVECHANGES)
 		return true
 	}

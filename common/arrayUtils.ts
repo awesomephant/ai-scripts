@@ -121,8 +121,8 @@ type sortFn = (a: any, b: any) => number
 function firstBy(f1: sortFn, f2: sortFn) {
 	var compare = f2
 		? function (a: any, b: any) {
-			return f1(a, b) || f2(a, b)
-		}
+				return f1(a, b) || f2(a, b)
+		  }
 		: f1
 	// @ts-expect-error
 	compare.thenBy = function (f) {
@@ -132,12 +132,11 @@ function firstBy(f1: sortFn, f2: sortFn) {
 }
 
 /**
- * Returns a hashmap value by key with an optional fallback 
+ * Returns a hashmap value by key with an optional fallback
  */
 function getMapValue(map: any, key: keyof typeof map, defaultValue: any) {
 	return map[key] ? map[key] : defaultValue || null
 }
-
 
 export {
 	forEach,
@@ -152,5 +151,6 @@ export {
 	objectDiff,
 	arraySubtract,
 	toArray,
+	getMapValue,
 	firstBy
 }

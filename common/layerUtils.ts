@@ -1,3 +1,4 @@
+import objectIsHidden from "../ai2html/objectIsHidden"
 import { contains, forEach, toArray } from "./arrayUtils"
 
 function unhideLayer(layer: any) {
@@ -6,7 +7,6 @@ function unhideLayer(layer: any) {
 		layer = layer.parent
 	}
 }
-
 function layerIsChildOf(layer: Layer, layer2: Layer) {
 	if (layer == layer2) return false
 	while (layer.typename == "Layer") {
@@ -54,7 +54,6 @@ function getSortedLayerItems(l: Layer) {
 	return items
 }
 
-
 function findCommonLayer(a: Layer, b: Layer): Layer | null {
 	let p = null
 	if (a == b) {
@@ -93,6 +92,11 @@ function findCommonAncestorLayer(items): Layer | null {
 	return ancestorLyr
 }
 
-
-
-export { unhideLayer, layerIsChildOf, findLayers, getSortedLayerItems, findCommonLayer, findCommonAncestorLayer }
+export {
+	unhideLayer,
+	layerIsChildOf,
+	findLayers,
+	getSortedLayerItems,
+	findCommonLayer,
+	findCommonAncestorLayer
+}
