@@ -61,11 +61,13 @@ import initJSON from "../common/json2"
 import {
 	findCommonAncestorLayer,
 	findLayers,
+	findTaggedLayers,
 	getSortedLayerItems,
 	layerIsChildOf,
 	unhideLayer
 } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
+import { getBlendMode } from "../common/pageItemUtils"
 import ProgressWindow from "../common/ProgressWindow"
 import replaceSvgIds from "../common/replaceSvgIds"
 import roundTo from "../common/roundTo"
@@ -117,6 +119,7 @@ import getLineGeometry from "./getLineGeometry"
 import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
+import { getArtboardImageName, getImageId, getLayerImageName } from "./imageUtils"
 import incrementCacheBustToken from "./incrementCacheBustToken"
 import { error } from "./logUtils"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
@@ -125,7 +128,7 @@ import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
-import { getParagraphRanges, getParagraphStyle, textIsRotated } from "./textUtils"
+import { getParagraphRanges, getParagraphStyle, textIsRotated, vshiftToPixels } from "./textUtils"
 import type {
 	ai2HTMLSettings,
 	ArtboardGroupForOutput,
@@ -155,13 +158,13 @@ function main() {
 	var textFramesToUnhide = []
 	var objectsToRelock = []
 
-	let docSettings: ai2HTMLSettings
+	let docSettings: Partial<ai2HTMLSettings> = {}
 	let textBlockData
 	let doc: Document
 	let docPath: string
 	let docSlug: string
 	let docIsSaved: boolean
-	let progressWindow: ProgressWindow
+	let progressWindow = new ProgressWindow({ name: "ai2html progress" })
 
 	const JSON = initJSON()
 
@@ -185,10 +188,8 @@ function main() {
 			createSettingsBlock(docSettings)
 		}
 
-		progressWindow = new ProgressWindow({
-			name: "ai2html progress",
-			steps: calcProgressBarSteps(doc)
-		})
+		progressWindow.opts.steps = calcProgressBarSteps(doc)
+		progressWindow.show()
 
 		if (hasDuplicateArtboardNames(docSettings, doc, warnOnce)) {
 			docSettings.grouped_artboards = true
@@ -556,7 +557,7 @@ function main() {
 		return o
 	}
 
-	function createSettingsBlock(settings: ai2HTMLSettings) {
+	function createSettingsBlock(settings: Partial<ai2HTMLSettings>) {
 		const bounds = getAllArtboardBounds(doc.artboards)
 		const fontSize = 14
 		const leading = 19
@@ -567,7 +568,7 @@ function main() {
 		const settingsLines: string[] = ["ai2html-settings"]
 		var layer, rect, textArea, height
 
-		forEach(settings.settings_block, function (key: keyof ai2HTMLSettings) {
+		forEach(settings.settings_block || [], (key: keyof ai2HTMLSettings) => {
 			settingsLines.push(key + ": " + settings[key])
 		})
 
@@ -582,7 +583,8 @@ function main() {
 
 		height = leading * (settingsLines.length + extraLines)
 		rect = layer.pathItems.rectangle(top, left, width, height)
-		// @ts-expect-error bad type def
+
+		// @ts-expect-error bad upstream type def
 		textArea = layer.textFrames.areaText(rect)
 		textArea.textRange.autoLeading = false
 		textArea.textRange.characterAttributes.leading = leading
@@ -1016,18 +1018,6 @@ function main() {
 		return info
 	}
 
-	function getBlendMode(obj) {
-		// Limitation: returns first found blending mode, ignores any others that
-		// might be applied a parent object
-		while (obj && obj.typename != "Document") {
-			if (obj.blendingMode && obj.blendingMode != BlendModes.NORMAL) {
-				return obj.blendingMode
-			}
-			obj = obj.parent
-		}
-		return null
-	}
-
 	// convert an object containing parsed AI text styles to an object containing CSS style properties
 	function convertAiTextStyle(aiStyle) {
 		var cssStyle = {}
@@ -1103,14 +1093,6 @@ function main() {
 		return cssStyle
 	}
 
-	function vshiftToPixels(vshift: string, fontSize: number) {
-		var i = vshift.indexOf("%")
-		var pct = parseFloat(vshift)
-		var px = (fontSize * pct) / 100
-		if (!px || i == -1) return "0"
-		return roundTo(px, 1) + "px"
-	}
-
 	function textFrameIsRenderable(frame: TextFrame, artboardRect: Bounds) {
 		var good = true
 		if (!boundsIntersect(frame.visibleBounds, artboardRect)) {
@@ -1149,7 +1131,7 @@ function main() {
 
 	// Find clipped TextFrames that are inside an artboard but outside their
 	// clipping path (using bounding box of clipping path to approximate clip area)
-	function getClippedTextFramesByArtboard(ab, masks) {
+	function getClippedTextFramesByArtboard(ab: Artboard, masks) {
 		var abRect = ab.artboardRect
 		var frames = []
 		forEach(masks, function (o) {
@@ -1173,7 +1155,7 @@ function main() {
 
 	// Get array of TextFrames belonging to an artboard, excluding text that
 	// overlaps the artboard but is hidden by a clipping mask
-	function getTextFramesByArtboard(ab, masks, settings) {
+	function getTextFramesByArtboard(ab: Artboard, masks, settings: ai2HTMLSettings) {
 		var candidateFrames = findTextFramesToRender(doc.textFrames, ab.artboardRect)
 		var excludedFrames = getClippedTextFramesByArtboard(ab, masks)
 		candidateFrames = arraySubtract(candidateFrames, excludedFrames)
@@ -1204,7 +1186,7 @@ function main() {
 
 	function getUntransformedTextBounds(textFrame) {
 		var copy = textFrame.duplicate(textFrame.parent, ElementPlacement.PLACEATEND)
-		var matrix = clearMatrixShift(textFrame.matrix)
+		var matrix = clearMatrixShift(textFrame.matrix, app)
 		copy.transform(app.invertMatrix(matrix))
 		var bnds = copy.geometricBounds
 		if (textFrame.kind == TextType.AREATEXT) {
@@ -1617,18 +1599,6 @@ function main() {
 	// ai2html image functions
 	// =================================
 
-	function getArtboardImageName(ab: Artboard, settings: ai2HTMLSettings) {
-		return getArtboardUniqueName(ab, settings, docSlug)
-	}
-
-	function getLayerImageName(layer: Layer, ab: Artboard, settings: ai2HTMLSettings) {
-		return getArtboardImageName(ab, settings) + "-" + getLayerName(layer)
-	}
-
-	function getImageId(imgName: string) {
-		return nameSpace + imgName + "-img"
-	}
-
 	function getPromoImageFormat(ab: Artboard, settings: ai2HTMLSettings) {
 		var fmt = settings.image_format[0]
 		if (fmt == "svg" || !fmt) {
@@ -1674,7 +1644,7 @@ function main() {
 			html_after: "",
 			video: ""
 		}
-		forEach(findTaggedLayers("video"), function (lyr: Layer) {
+		forEach(findTaggedLayers("video", doc), (lyr: Layer) => {
 			if (objectIsHidden(lyr)) return
 			var str = getSpecialLayerText(lyr, activeArtboard)
 			if (!str) return
@@ -1686,14 +1656,14 @@ function main() {
 			}
 			data.layers.push(lyr)
 		})
-		forEach(findTaggedLayers("html-before"), function (lyr) {
+		forEach(findTaggedLayers("html-before", doc), (lyr) => {
 			if (objectIsHidden(lyr)) return
 			var str = getSpecialLayerText(lyr, activeArtboard)
 			if (!str) return
 			data.layers.push(lyr)
 			data.html_before = str
 		})
-		forEach(findTaggedLayers("html-after"), function (lyr) {
+		forEach(findTaggedLayers("html-after", doc), (lyr) => {
 			if (objectIsHidden(lyr)) return
 			var str = getSpecialLayerText(lyr, activeArtboard)
 			if (!str) return
@@ -1731,7 +1701,7 @@ function main() {
 
 	// Generate images and return HTML embed code
 	function convertArtItems(activeArtboard, textFrames, masks, settings) {
-		var imgName = getArtboardImageName(activeArtboard, settings)
+		var imgName = getArtboardImageName(activeArtboard, settings, docSlug)
 		var hideTextFrames = !isTrue(settings.testing_mode) && settings.render_text_as != "image"
 		var textFrameCount = textFrames.length
 		var html = ""
@@ -1749,21 +1719,24 @@ function main() {
 		}
 
 		// Symbols in :symbol layers are not scaled
-		forEach(findTaggedLayers("symbol"), function (lyr) {
+		forEach(findTaggedLayers("symbol", doc), (lyr) => {
 			var obj = exportSymbols(lyr, activeArtboard, masks, { scaled: false })
 			html += obj.html
 			hiddenItems = hiddenItems.concat(obj.items)
 		})
 
 		// Symbols in :div layers are scaled
-		forEach(findTaggedLayers("div"), function (lyr) {
+		forEach(findTaggedLayers("div", doc), (lyr) => {
 			var obj = exportSymbols(lyr, activeArtboard, masks, { scaled: true })
 			html += obj.html
 			hiddenItems = hiddenItems.concat(obj.items)
 		})
 
-		forEach(findTaggedLayers("svg"), function (lyr) {
-			var uniqName = uniqAssetName(getLayerImageName(lyr, activeArtboard, settings), uniqNames)
+		forEach(findTaggedLayers("svg", doc), (lyr) => {
+			var uniqName = uniqAssetName(
+				getLayerImageName(lyr, activeArtboard, settings, docSlug),
+				uniqNames
+			)
 			var layerHtml = exportImage(uniqName, "svg", activeArtboard, masks, lyr, settings)
 			if (layerHtml) {
 				uniqNames.push(uniqName)
@@ -1777,7 +1750,7 @@ function main() {
 		// Inside this function, layers are hidden and unhidden as needed
 		forEachImageLayer("png", function (lyr) {
 			var opts = extend({}, settings, { png_transparent: true })
-			var name = getLayerImageName(lyr, activeArtboard, settings)
+			var name = getLayerImageName(lyr, activeArtboard, settings, docSlug)
 			var fmt = contains(settings.image_format || [], "png24") ? "png24" : "png"
 			// This test prevents empty images, but is expensive when a layer contains many art objects...
 			// consider only testing if an option is set by the user.
@@ -1808,13 +1781,6 @@ function main() {
 		return { html: html }
 	}
 
-	function findTaggedLayers(tag: string) {
-		function test(layer: Layer) {
-			return tag && parseObjectName(layer.name)[tag]
-		}
-		return findLayers(doc.layers, test) || []
-	}
-
 	function getImageFileName(name, fmt) {
 		// for file extension, convert png24 -> png; other format names are same as extension
 		return name + "." + fmt.substring(0, 3)
@@ -1826,10 +1792,17 @@ function main() {
 	}
 
 	// Capture and save an image to the filesystem and return html embed code
-	function exportImage(imgName, format, ab, masks, layer, settings) {
+	function exportImage(
+		imgName: string,
+		format: string,
+		ab: Artboard,
+		masks,
+		layer: Layer,
+		settings: ai2HTMLSettings
+	) {
 		var imgFile = getImageFileName(imgName, format)
 		var outputPath = pathJoin(getImageFolder(settings, docPath), imgFile)
-		var imgId = getImageId(imgName)
+		var imgId = getImageId(imgName, nameSpace)
 
 		// remove artboard size (careful not to remove deduplication annotations)
 		var imgClass = imgId.replace(/-[1-9][0-9]+-/, "-")
@@ -1899,7 +1872,7 @@ function main() {
 	// Side effect: Tagged layers remain hidden after the function completes
 	// (they have to be unhidden later)
 	function forEachImageLayer(imageType, callback: (layer: Layer) => void) {
-		var targetLayers = findTaggedLayers(imageType) // only finds visible layers with a tag
+		var targetLayers = findTaggedLayers(imageType, doc) // only finds visible layers with a tag
 		var hiddenLayers = []
 		if (targetLayers.length === 0) return
 

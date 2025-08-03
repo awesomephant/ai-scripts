@@ -1,4 +1,11 @@
-import { ai2HTMLSettings, AiCssMap, AiHtmlMap, blendModeRule, FontRule, IllustratorCssMapping } from "./types"
+import {
+	ai2HTMLSettings,
+	AiCssMap,
+	AiHtmlMap,
+	blendModeRule,
+	FontRule,
+	IllustratorCssMapping
+} from "./types"
 
 const defaultFonts: FontRule[] = [
 	{
@@ -165,11 +172,4 @@ const defaultSettings: Partial<ai2HTMLSettings> = {
 	// list of settings to include in the config.yml file
 	config_file: ["headline", "leadin", "summary", "notes", "sources", "credit"]
 }
-export {
-	defaultFonts,
-	caps,
-	align,
-	blendModes,
-	defaultSettings,
-	cssTextStyleProperties
-}
+export { defaultFonts, caps, align, blendModes, defaultSettings, cssTextStyleProperties }

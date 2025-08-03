@@ -29,7 +29,7 @@ function zeroPad(val: number | string, digits: number) {
 	return str
 }
 
-function truncateString(str: string, maxlen: number, useEllipsis: boolean) {
+function truncateString(str: string, maxlen: number, useEllipsis: boolean = false) {
 	// TODO: add ellipsis, truncate at word boundary
 	if (str.length > maxlen) {
 		str = str.substr(0, maxlen)

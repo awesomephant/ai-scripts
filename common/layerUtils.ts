@@ -1,4 +1,5 @@
 import objectIsHidden from "../ai2html/objectIsHidden"
+import parseObjectName from "../ai2html/parseObjectName"
 import { contains, forEach, toArray } from "./arrayUtils"
 
 function unhideLayer(layer: any) {
@@ -91,6 +92,12 @@ function findCommonAncestorLayer(items): Layer | null {
 	}
 	return ancestorLyr
 }
+function findTaggedLayers(tag: string, doc: Document) {
+	function test(layer: Layer) {
+		return tag && parseObjectName(layer.name)[tag]
+	}
+	return findLayers(doc.layers, test) || []
+}
 
 export {
 	unhideLayer,
@@ -98,5 +105,6 @@ export {
 	findLayers,
 	getSortedLayerItems,
 	findCommonLayer,
-	findCommonAncestorLayer
+	findCommonAncestorLayer,
+	findTaggedLayers
 }
