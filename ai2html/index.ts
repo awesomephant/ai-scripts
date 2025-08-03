@@ -119,7 +119,12 @@ import getLineGeometry from "./getLineGeometry"
 import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
-import { getArtboardImageName, getImageId, getLayerImageName } from "./imageUtils"
+import {
+	forEachImageLayer,
+	getArtboardImageName,
+	getImageId,
+	getLayerImageName
+} from "./imageUtils"
 import incrementCacheBustToken from "./incrementCacheBustToken"
 import { error } from "./logUtils"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
@@ -1748,7 +1753,7 @@ function main() {
 
 		// Embed images tagged :png as separate images
 		// Inside this function, layers are hidden and unhidden as needed
-		forEachImageLayer("png", function (lyr) {
+		forEachImageLayer("png", doc, (lyr) => {
 			var opts = extend({}, settings, { png_transparent: true })
 			var name = getLayerImageName(lyr, activeArtboard, settings, docSlug)
 			var fmt = contains(settings.image_format || [], "png24") ? "png24" : "png"
@@ -1865,44 +1870,6 @@ function main() {
 			)
 		})
 		return svg
-	}
-
-	// Finds layers that have an image type annotation in their names (e.g. :png)
-	// and passes each tagged layer to a callback, after hiding all other content
-	// Side effect: Tagged layers remain hidden after the function completes
-	// (they have to be unhidden later)
-	function forEachImageLayer(imageType, callback: (layer: Layer) => void) {
-		var targetLayers = findTaggedLayers(imageType, doc) // only finds visible layers with a tag
-		var hiddenLayers = []
-		if (targetLayers.length === 0) return
-
-		// Hide all visible layers (image export captures entire artboard)
-		forEach(findLayers(doc.layers), function (lyr) {
-			// Except: don't hide layers that are children of a targeted layer
-			// (inconvenient to unhide these selectively later)
-			if (
-				find(targetLayers, function (target) {
-					return layerIsChildOf(lyr, target)
-				})
-			)
-				return
-			lyr.visible = false
-			hiddenLayers.push(lyr)
-		})
-
-		forEach(targetLayers, function (lyr) {
-			// show layer (and any hidden parent layers)
-			unhideLayer(lyr)
-			callback(lyr)
-			lyr.visible = false // hide again
-		})
-
-		// Re-show all layers except image layers
-		forEach(hiddenLayers, function (lyr) {
-			if (indexOf(targetLayers, lyr) == -1) {
-				lyr.visible = true
-			}
-		})
 	}
 
 	// ab: the active artboard

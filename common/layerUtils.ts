@@ -17,7 +17,7 @@ function layerIsChildOf(layer: Layer, layer2: Layer) {
 	return false
 }
 
-function findLayers(layers: Layer[], test: (layer: Layer) => boolean): Layer[] {
+function findLayers(layers: Layer[], test?: (layer: Layer) => boolean): Layer[] {
 	let res: Layer[] = []
 
 	forEach(layers, (layer) => {
