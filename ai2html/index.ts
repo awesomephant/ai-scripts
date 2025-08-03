@@ -1691,7 +1691,7 @@ function main() {
 		return { html: html }
 	}
 
-	function getImageFileName(name, fmt) {
+	function getImageFileName(name: string, fmt: string) {
 		// for file extension, convert png24 -> png; other format names are same as extension
 		return name + "." + fmt.substring(0, 3)
 	}
@@ -1796,9 +1796,7 @@ function main() {
 			artboardContainsVisibleRasterImage(ab, doc)
 		) {
 			warnOnce(
-				"An artboard contains a raster image -- consider exporting to jpg instead of " +
-					formats[0] +
-					"."
+				`An artboard contains a raster image - consider exporting to jpg instead of ${formats[0]}.`
 			)
 		}
 

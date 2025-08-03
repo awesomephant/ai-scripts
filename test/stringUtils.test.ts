@@ -4,7 +4,10 @@ import {
 	stripTag,
 	stringToLines,
 	zeroPad,
-	makeList
+	makeList,
+	trimQuotationMarks,
+	trim,
+	truncateString
 } from "../common/stringUtils"
 
 describe("stripSettingsFileComments()", function () {
@@ -46,6 +49,29 @@ describe("zeroPad()", () => {
 		expect(zeroPad(100, 2)).toBe("100")
 		expect(zeroPad("", 2)).toBe("00")
 		expect(zeroPad("10", 2)).toBe("10")
+	})
+})
+
+describe("trim()", () => {
+	it("works", () => {
+		expect(trim("  test   ")).toBe("test")
+	})
+})
+
+describe("trimQuotationMarks()", () => {
+	it("trims single quotes", () => {
+		expect(trimQuotationMarks("'test'")).toBe("test")
+	})
+	it("trims double quotes", () => {
+		expect(trimQuotationMarks('"test"')).toBe("test")
+	})
+})
+
+describe("truncateString()", () => {
+	it("works", () => {
+		expect(truncateString("this is a test string", 3, false)).toBe("thi")
+		expect(truncateString("this is a test string", 7, false)).toBe("this is")
+		expect(truncateString("this is a test string", 3, true)).toBe("thi...")
 	})
 })
 
