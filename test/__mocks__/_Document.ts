@@ -1,5 +1,7 @@
 import _Artboards from "./Artboards"
-import _Artboard from "./Artboard"
+import _Artboard from "./_Artboard"
+import _Layers from "./_Layers"
+import _PathItems from "./_PathItems"
 
 export default class _Document implements Partial<Document> {
 	artboards: _Artboard[]
@@ -37,7 +39,7 @@ export default class _Document implements Partial<Document> {
 	height: number
 	inkList: Ink[]
 	kinsokuSet: string[]
-	layers: Layers
+	layers: _Layers
 	legacyTextItems: LegacyTextItems
 	meshItems: MeshItems
 	mojikumiSet: string[]
@@ -81,6 +83,7 @@ export default class _Document implements Partial<Document> {
 	width: number
 	constructor() {
 		this.artboards = []
+		this.layers = new _Layers()
 	}
 	activate(): void {
 		// noop

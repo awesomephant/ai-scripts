@@ -4,8 +4,8 @@ import "html-validate/vitest"
 import generateOutputHtml from "../ai2html/generateOutputHtml"
 import { ai2HTMLSettings, outputData } from "../ai2html/types"
 
-import _Document from "./__mocks__/Document"
-import _Artboard from "./__mocks__/Artboard"
+import _Document from "./__mocks__/_Document"
+import _Artboard from "./__mocks__/_Artboard"
 import groupArtboardsForOutput from "../ai2html/groupArtboardForOutput"
 
 vi.useFakeTimers()

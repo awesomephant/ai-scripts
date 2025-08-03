@@ -5,7 +5,7 @@ import {
 	forEachUsableArtboard,
 	getArtboardWidth
 } from "../ai2html/ArtboardUtils"
-import _Artboard from "./__mocks__/Artboard"
+import _Artboard from "./__mocks__/_Artboard"
 
 import { mockAiToHtmlSettings, mockArtboard, mockDocument } from "./mock-ai"
 

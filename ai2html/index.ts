@@ -100,6 +100,7 @@ import {
 	defaultFonts,
 	defaultSettings
 } from "./constants"
+import createSettingsBlock from "./createSettingsBlock"
 import extendFontlist from "./extendFontlist"
 import generateArtboardCss from "./generateArtboardCss"
 import generateArtboardDiv from "./generateArtboardHtml"
@@ -181,7 +182,7 @@ function main() {
 		docPath = doc.path + "/"
 		docIsSaved = doc.saved
 		textBlockData = initSpecialTextBlocks()
-		docSettings = initDocumentSettings(textBlockData.settings)
+		docSettings = initDocumentSettings(textBlockData.settings, scriptVersion)
 		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName(doc))
 		nameSpace = docSettings.namespace || ""
 		fonts = extendFontlist(fonts, docSettings.fonts || [])
@@ -191,7 +192,7 @@ function main() {
 		progressWindow.show()
 
 		if (!textBlockData.settings && isTrue(docSettings.create_settings_block)) {
-			createSettingsBlock(docSettings)
+			createSettingsBlock(docSettings, doc, message)
 		}
 
 		if (hasDuplicateArtboardNames(docSettings, doc, warnOnce)) {
@@ -430,7 +431,7 @@ function main() {
 	// code from specially formatted text blocks
 	function initSpecialTextBlocks() {
 		const rxp: RegExp = /^ai2html-(css|js|html|settings|text|html-before|html-after)\s*$/
-		var settings: Partial<ai2HTMLSettings> = {}
+		var settings: Partial<ai2HTMLSettings> | null = null
 		var code = {}
 		forEach(doc.textFrames, (thisFrame: TextFrame) => {
 			// var contents = thisFrame.contents; // caused MRAP error in AI 2017
@@ -497,8 +498,8 @@ function main() {
 	}
 
 	// Derive ai2html program settings by merging default settings and overrides.
-	function initDocumentSettings(textBlockSettings: ai2HTMLSettings | null) {
-		let settings: ai2HTMLSettings = { ...defaultSettings, scriptVersion } // copy default settings
+	function initDocumentSettings(textBlockSettings: ai2HTMLSettings | null, scriptVersion: string) {
+		let settings: ai2HTMLSettings = { ...defaultSettings, settings_version: scriptVersion } // copy default settings
 
 		// merge config file settings into @settings
 		// TODO: handle inconsistent settings in text block and local config file
@@ -556,45 +557,6 @@ function main() {
 			warn("Error reading settings file " + path + ": [" + e.message + "]")
 		}
 		return o
-	}
-
-	function createSettingsBlock(settings: Partial<ai2HTMLSettings>) {
-		const bounds = getAllArtboardBounds(doc.artboards)
-		const fontSize = 14
-		const leading = 19
-		const extraLines = 6
-		const width = 400
-		const left = bounds[0] - width - 50
-		const top = bounds[1]
-		const settingsLines: string[] = ["ai2html-settings"]
-		var layer, rect, textArea, height
-
-		forEach(settings.settings_block || [], (key: keyof ai2HTMLSettings) => {
-			settingsLines.push(key + ": " + settings[key])
-		})
-
-		try {
-			layer = doc.layers.getByName("ai2html-settings")
-			layer.locked = false
-		} catch (e) {
-			layer = doc.layers.add()
-			layer.zOrder(ZOrderMethod.BRINGTOFRONT)
-			layer.name = "ai2html-settings"
-		}
-
-		height = leading * (settingsLines.length + extraLines)
-		rect = layer.pathItems.rectangle(top, left, width, height)
-
-		// @ts-expect-error bad upstream type def
-		textArea = layer.textFrames.areaText(rect)
-		textArea.textRange.autoLeading = false
-		textArea.textRange.characterAttributes.leading = leading
-		textArea.textRange.characterAttributes.fillColor = makeRgbColor([255, 255, 255])
-		textArea.textRange.characterAttributes.size = fontSize
-		textArea.contents = settingsLines.join("\n")
-		textArea.name = "ai2html-settings"
-		message("A settings text block was created to the left of all your artboards.")
-		return textArea
 	}
 
 	// Show alert or prompt; return true if promo image should be generated

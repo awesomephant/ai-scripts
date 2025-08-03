@@ -1,8 +1,8 @@
 import { ai2HTMLSettings } from "../ai2html/types"
 
 import { it, expect } from "vitest"
-import _Document from "./__mocks__/Document"
-import _Artboard from "./__mocks__/Artboard"
+import _Document from "./__mocks__/_Document"
+import _Artboard from "./__mocks__/_Artboard"
 
 import { nyt_generateScoopYaml } from "../ai2html/nyt_generateScoopYaml"
 import initJSON from "../common/json2"

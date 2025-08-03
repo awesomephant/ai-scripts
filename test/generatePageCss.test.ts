@@ -1,7 +1,7 @@
 import { it, expect } from "vitest"
 import generatePageCss from "../ai2html/generatePageCss"
 import { ai2HTMLSettings, ArtboardGroupForOutput } from "../ai2html/types"
-import _Artboard from "./__mocks__/Artboard"
+import _Artboard from "./__mocks__/_Artboard"
 
 it("renders expected CSS", () => {
 	const group: ArtboardGroupForOutput = {

@@ -1,8 +1,8 @@
 import { it, expect } from "vitest"
 import generateJsonSettingsFileContent from "../ai2html/generateJsonSettingsFileContent"
 import initJSON from "../common/json2"
-import _Document from "./__mocks__/Document"
-import _Artboard from "./__mocks__/Artboard"
+import _Document from "./__mocks__/_Document"
+import _Artboard from "./__mocks__/_Artboard"
 import { ai2HTMLSettings } from "../ai2html/types"
 
 it("works", () => {

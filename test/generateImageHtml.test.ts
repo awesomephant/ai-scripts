@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import "html-validate/vitest"
-import _Artboard from "./__mocks__/Artboard"
+import _Artboard from "./__mocks__/_Artboard"
 import { ai2HTMLSettings } from "../ai2html/types"
 import generateImageHtml from "../ai2html/generateImageHtml"
 
