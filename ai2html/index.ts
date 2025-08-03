@@ -33,7 +33,7 @@ import {
 	toArray
 } from "../common/arrayUtils"
 import { isTrue } from "../common/booleanUtils"
-import { formatCssRule } from "../common/cssUtils"
+import { formatCssPct, formatCssRule } from "../common/cssUtils"
 import {
 	checkForOutputFolder,
 	deleteFile,
@@ -101,6 +101,7 @@ import {
 } from "./constants"
 import extendFontlist from "./extendFontlist"
 import generateArtboardCss from "./generateArtboardCss"
+import generateArtboardDiv from "./generateArtboardHtml"
 import generateJsonSettingsFileContent from "./generateJsonSettingsFileContent"
 import generateOutputHtml from "./generateOutputHtml"
 import getCircleData from "./getCircleData"
@@ -344,7 +345,7 @@ function main() {
 				"\t<!-- Artboard: " +
 				getArtboardName(activeArtboard) +
 				" -->\r" +
-				generateArtboardDiv(activeArtboard, group, settings) +
+				generateArtboardDiv(activeArtboard, group, settings, nameSpace, docSlug, cssPrecision) +
 				imageData.html +
 				textData.html +
 				"\t</div>\r"
@@ -1291,10 +1292,6 @@ function main() {
 		return selected
 	}
 
-	function formatCssPct(part, whole) {
-		return roundTo((part / whole) * 100, cssPrecision) + "%"
-	}
-
 	function getUntransformedTextBounds(textFrame) {
 		var copy = textFrame.duplicate(textFrame.parent, ElementPlacement.PLACEATEND)
 		var matrix = clearMatrixShift(textFrame.matrix)
@@ -1434,28 +1431,28 @@ function main() {
 
 		if (v_align == "bottom") {
 			var bottomPx = abBox.height - (htmlBox.top + htmlBox.height + marginBottomPx)
-			styles += "bottom:" + formatCssPct(bottomPx, abBox.height) + ";"
+			styles += "bottom:" + formatCssPct(bottomPx, abBox.height, cssPrecision) + ";"
 		} else if (v_align == "middle") {
 			// https://css-tricks.com/centering-in-the-unknown/
 			// TODO: consider: http://zerosixthree.se/vertical-align-anything-with-just-3-lines-of-css/
-			styles += "top:" + formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height) + ";"
+			styles += "top:" + formatCssPct(htmlT + marginTopPx + htmlBox.height / 2, abBox.height, cssPrecision) + ";"
 			styles += "margin-top:-" + roundTo(marginTopPx + htmlBox.height / 2, 1) + "px;"
 		} else {
-			styles += "top:" + formatCssPct(htmlT, abBox.height) + ";"
+			styles += "top:" + formatCssPct(htmlT, abBox.height, cssPrecision) + ";"
 		}
 		if (alignment == "right") {
-			styles += "right:" + formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width) + ";"
+			styles += "right:" + formatCssPct(abBox.width - (htmlL + htmlBox.width), abBox.width, cssPrecision) + ";"
 		} else if (alignment == "center") {
-			styles += "left:" + formatCssPct(htmlL + htmlBox.width / 2, abBox.width) + ";"
+			styles += "left:" + formatCssPct(htmlL + htmlBox.width / 2, abBox.width, cssPrecision) + ";"
 			// setting a negative left margin for horizontal placement of centered text
 			// using percent for area text (because area text width uses percent) and pixels for point text
 			if (thisFrame.kind == TextType.POINTTEXT) {
 				styles += "margin-left:-" + roundTo(htmlW / 2, 1) + "px;"
 			} else {
-				styles += "margin-left:" + formatCssPct(-htmlW / 2, abBox.width) + ";"
+				styles += "margin-left:" + formatCssPct(-htmlW / 2, abBox.width, cssPrecision) + ";"
 			}
 		} else {
-			styles += "left:" + formatCssPct(htmlL, abBox.width) + ";"
+			styles += "left:" + formatCssPct(htmlL, abBox.width, cssPrecision) + ";"
 		}
 
 		classes = nameSpace + getLayerName(thisFrame.layer) + " " + nameSpace + "aiAbs"
@@ -1469,7 +1466,7 @@ function main() {
 		} else {
 			// area text uses pct width, so width of text boxes will scale
 			// TODO: consider only using pct width with wider text boxes that contain paragraphs of text
-			styles += "width:" + formatCssPct(htmlW, abBox.width) + ";"
+			styles += "width:" + formatCssPct(htmlW, abBox.width, cssPrecision) + ";"
 		}
 		return 'class="' + classes + '" style="' + styles + '"'
 	}
@@ -1530,11 +1527,11 @@ function main() {
 		height = roundTo(height, precision)
 
 		if (opts.scaled) {
-			styles.push("width: " + formatCssPct(width, abBox.width))
-			styles.push("height: " + formatCssPct(height, abBox.height))
-			styles.push("margin-left: " + formatCssPct(-width / 2, abBox.width))
+			styles.push("width: " + formatCssPct(width, abBox.width, cssPrecision))
+			styles.push("height: " + formatCssPct(height, abBox.height, cssPrecision))
+			styles.push("margin-left: " + formatCssPct(-width / 2, abBox.width, cssPrecision))
 			// vertical margin pct is calculated as pct of width
-			styles.push("margin-top: " + formatCssPct(-height / 2, abBox.width))
+			styles.push("margin-top: " + formatCssPct(-height / 2, abBox.width, cssPrecision))
 		} else {
 			styles.push("width: " + width + "px")
 			styles.push("height: " + height + "px")
@@ -1561,8 +1558,8 @@ function main() {
 		if (style.multiply) {
 			styles.push("mix-blend-mode: multiply")
 		}
-		styles.push("left: " + formatCssPct(center[0], abBox.width))
-		styles.push("top: " + formatCssPct(center[1], abBox.height))
+		styles.push("left: " + formatCssPct(center[0], abBox.width, cssPrecision))
+		styles.push("top: " + formatCssPct(center[1], abBox.height, cssPrecision))
 		// TODO: use class for colors and other properties
 		return 'style="' + styles.join("; ") + ';"'
 	}
@@ -2420,52 +2417,6 @@ function main() {
 	// ===================================
 	// ai2html output generation functions
 	// ===================================
-
-	function generateArtboardDiv(
-		ab: Artboard,
-		group: ArtboardGroupForOutput,
-		settings: ai2HTMLSettings
-	) {
-		var id = nameSpace + getArtboardUniqueName(ab, settings, docSlug)
-		var classname = nameSpace + "artboard"
-		var widthRange = getArtboardWidthRange(ab, group, settings)
-		var visibleRange = getArtboardVisibilityRange(ab, group, settings)
-		var abBox = aiBoundsToRect(ab.artboardRect)
-		var aspectRatio = abBox.width / abBox.height
-		var inlineStyle = ""
-		var inlineSpacerStyle = ""
-		var html = ""
-
-		// Set size of graphic using inline CSS
-		if (widthRange[0] == widthRange[1]) {
-			// fixed width
-			// inlineSpacerStyle += "width:" + abBox.width + "px; height:" + abBox.height + "px;";
-			inlineStyle += "width:" + abBox.width + "px; height:" + abBox.height + "px;"
-		} else {
-			// Set height of dynamic artboards using vertical padding as a %, to preserve aspect ratio.
-			inlineSpacerStyle = "padding: 0 0 " + formatCssPct(abBox.height, abBox.width) + " 0;"
-			if (widthRange[0] > 0) {
-				inlineStyle += "min-width: " + widthRange[0] + "px;"
-			}
-			if (widthRange[1] < Infinity) {
-				inlineStyle += "max-width: " + widthRange[1] + "px;"
-				inlineStyle += "max-height: " + Math.round(widthRange[1] / aspectRatio) + "px"
-			}
-		}
-
-		html += '\t<div id="' + id + '" class="' + classname + '" style="' + inlineStyle + '"'
-		html += ' data-aspect-ratio="' + roundTo(aspectRatio, 3) + '"'
-		if (isTrue(settings.include_resizer_widths) || isTrue(settings.include_resizer_script)) {
-			html += ' data-min-width="' + visibleRange[0] + '"'
-			if (visibleRange[1] < Infinity) {
-				html += ' data-max-width="' + visibleRange[1] + '"'
-			}
-		}
-		html += ">\r"
-		// add spacer div
-		html += '\t\t<div style="' + inlineSpacerStyle + '"></div>\n'
-		return html
-	}
 
 	// Write an HTML page to a file for NYT Preview
 	function outputLocalPreviewPage(

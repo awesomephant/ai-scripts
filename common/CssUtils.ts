@@ -19,4 +19,8 @@ function formatCssColor(r: number, g: number, b: number, a?: number) {
 	return `rgb(${[r, g, b].join(",")})`
 }
 
-export { formatCssColor, formatCssRule }
+function formatCssPct(part: number, whole: number, precision: number) {
+	return roundTo((part / whole) * 100, precision) + "%"
+}
+
+export { formatCssColor, formatCssRule, formatCssPct }
