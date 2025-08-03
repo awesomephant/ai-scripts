@@ -171,27 +171,27 @@ function main() {
 	const JSON = initJSON()
 
 	try {
+		verifyEntryConditions(app)
+
 		if (!isTestedIllustratorVersion(app.version)) {
 			warn("Ai2html has not been tested on this version of Illustrator.")
 		}
-		verifyEntryConditions(app)
 
-		// initialize script settings
 		doc = app.activeDocument
 		docPath = doc.path + "/"
 		docIsSaved = doc.saved
 		textBlockData = initSpecialTextBlocks()
 		docSettings = initDocumentSettings(textBlockData.settings)
 		docSlug = docSettings.project_name || makeDocumentSlug(getRawDocumentName(doc))
-		nameSpace = docSettings.namespace || nameSpace
+		nameSpace = docSettings.namespace || ""
 		fonts = extendFontlist(fonts, docSettings.fonts || [])
+
+		progressWindow.opts.steps = calcProgressBarSteps(doc)
+		progressWindow.show()
 
 		if (!textBlockData.settings && isTrue(docSettings.create_settings_block)) {
 			createSettingsBlock(docSettings)
 		}
-
-		progressWindow.opts.steps = calcProgressBarSteps(doc)
-		progressWindow.show()
 
 		if (hasDuplicateArtboardNames(docSettings, doc, warnOnce)) {
 			docSettings.grouped_artboards = true
@@ -227,19 +227,14 @@ function main() {
 		clearSelection()
 		objectsToRelock = [...objectsToRelock, ...unlockObjects(doc)]
 
-		// identify all clipping masks and their contents
 		const masks = findMasks()
 		const groups = groupArtboardsForOutput(settings, docSlug, doc)
-
 		if (groups.length === 0) error("No usable artboards were found")
 
 		forEach(groups, (group) => {
 			renderArtboardGroup(group, masks, settings, textBlockContent)
 		})
 
-		//=====================================
-		// Post-output operations
-		//=====================================
 		if (isTrue(settings.create_json_config_files)) {
 			// Create JSON config files, one for each .ai file
 			const jsonStr = generateJsonSettingsFileContent(settings, doc, scriptVersion, JSON)

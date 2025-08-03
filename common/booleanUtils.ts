@@ -3,7 +3,7 @@
  * @param s
  * @returns boolean
  */
-function isTrue(s: string | boolean): boolean {
+function isTrue(s: string | boolean | undefined): boolean {
 	return s === "true" || s === "yes" || s === true
 }
 
@@ -12,7 +12,7 @@ function isTrue(s: string | boolean): boolean {
  * @param s
  * @returns boolean
  */
-function isFalse(s: string | boolean): boolean {
+function isFalse(s: string | boolean | undefined): boolean {
 	return s === "false" || s === "no" || s === false
 }
 

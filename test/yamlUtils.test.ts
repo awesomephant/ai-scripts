@@ -4,7 +4,7 @@ import { join } from "path"
 import { readFileSync } from "fs"
 import initJSON from "../common/json2"
 
-const testConfig = join(__dirname, "./data", "config.yml")
+const testConfig = join(__dirname, "./__data__", "config.yml")
 const testYaml = readFileSync(testConfig, "utf8")
 const JSON = initJSON()
 

@@ -5,7 +5,7 @@ import { join } from "path"
 import { readFileSync } from "fs"
 import { stringToLines } from "../common/stringUtils"
 
-const testConfig = join(__dirname, "./data", "config.yml")
+const testConfig = join(__dirname, "./__data__", "config.yml")
 const config = readFileSync(testConfig, "utf8")
 const lines = stringToLines(config)
 
