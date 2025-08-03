@@ -99,6 +99,16 @@ function findTaggedLayers(tag: string, doc: Document) {
 	return findLayers(doc.layers, test) || []
 }
 
+function objectHasLayer(obj: PageItem) {
+	let hasLayer = false
+	try {
+		hasLayer = !!obj.layer
+	} catch (e) {
+		// trying to access the layer property of a placed item that is used as an opacity mask
+		// throws an error (as of Illustrator 2018)
+	}
+	return hasLayer
+}
 export {
 	unhideLayer,
 	layerIsChildOf,
@@ -106,5 +116,6 @@ export {
 	getSortedLayerItems,
 	findCommonLayer,
 	findCommonAncestorLayer,
-	findTaggedLayers
+	findTaggedLayers,
+	objectHasLayer
 }

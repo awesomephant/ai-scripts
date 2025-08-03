@@ -27,7 +27,6 @@ import {
 	firstBy,
 	forEach,
 	getMapValue,
-	indexOf,
 	map,
 	objectDiff,
 	some,
@@ -60,11 +59,8 @@ import isTestedIllustratorVersion from "../common/isTestedIllustratorVersion"
 import initJSON from "../common/json2"
 import {
 	findCommonAncestorLayer,
-	findLayers,
 	findTaggedLayers,
-	getSortedLayerItems,
-	layerIsChildOf,
-	unhideLayer
+	getSortedLayerItems
 } from "../common/layerUtils"
 import makeRgbColor from "../common/makeRgbColor"
 import { getBlendMode } from "../common/pageItemUtils"
@@ -82,21 +78,19 @@ import {
 } from "../common/stringUtils"
 import { unlockObject, unlockObjects } from "../common/unlockObject"
 import {
+	artboardContainsVisibleRasterImage,
 	calcProgressBarSteps,
 	clearMatrixShift,
 	findArtboardIndex,
 	findLargestArtboardIndex,
-	forEachUsableArtboard,
 	getArtboardName,
-	getArtboardUniqueName,
 	getDocumentArtboardName,
 	getLayerName,
 	getRawDocumentName,
 	hasDuplicateArtboardNames,
 	makeDocumentSlug,
 	makeTmpDocument,
-	objectOverlapsAnyArtboard,
-	objectOverlapsArtboard
+	objectOverlapsAnyArtboard
 } from "./ArtboardUtils"
 import cleanCodeBlock from "./cleanCodeBlock"
 import {
@@ -160,8 +154,8 @@ function main() {
 	let errors: string[] = []
 	let oneTimeWarnings: string[] = []
 
-	var textFramesToUnhide = []
-	var objectsToRelock = []
+	var textFramesToUnhide: TextFrame[] = []
+	var objectsToRelock: PageItem[] = []
 
 	let docSettings: Partial<ai2HTMLSettings> = {}
 	let textBlockData
@@ -1617,29 +1611,9 @@ function main() {
 	// setting: value from ai2html settings (e.g. 'auto' 'png')
 	function resolveArtboardImageFormat(setting: ImageFormat, ab: Artboard) {
 		if (setting === "auto") {
-			return artboardContainsVisibleRasterImage(ab) ? "jpg" : "png"
+			return artboardContainsVisibleRasterImage(ab, doc) ? "jpg" : "png"
 		}
 		return setting
-	}
-
-	function objectHasLayer(obj) {
-		var hasLayer = false
-		try {
-			hasLayer = !!obj.layer
-		} catch (e) {
-			// trying to access the layer property of a placed item that is used as an opacity mask
-			// throws an error (as of Illustrator 2018)
-		}
-		return hasLayer
-	}
-
-	function artboardContainsVisibleRasterImage(ab: Artboard) {
-		function test(item) {
-			// Calling objectHasLayer() prevents a crash caused by opacity masks created from linked rasters.
-			return objectHasLayer(item) && objectOverlapsArtboard(item, ab) && !objectIsHidden(item)
-		}
-		// TODO: verify that placed items are rasters
-		return contains(doc.placedItems, test) || contains(doc.rasterItems, test)
 	}
 
 	function convertSpecialLayers(activeArtboard, settings) {
@@ -1885,7 +1859,11 @@ function main() {
 			return ""
 		}
 
-		if (formats[0] != "auto" && formats[0] != "jpg" && artboardContainsVisibleRasterImage(ab)) {
+		if (
+			formats[0] != "auto" &&
+			formats[0] != "jpg" &&
+			artboardContainsVisibleRasterImage(ab, doc)
+		) {
 			warnOnce(
 				"An artboard contains a raster image -- consider exporting to jpg instead of " +
 					formats[0] +

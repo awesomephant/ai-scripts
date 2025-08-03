@@ -1,7 +1,9 @@
 import { contains, forEach, indexOf } from "../common/arrayUtils"
 import { aiBoundsToRect, boundsIntersect } from "../common/geometryUtils"
+import { objectHasLayer } from "../common/layerUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
+import objectIsHidden from "./objectIsHidden"
 import parseObjectName from "./parseObjectName"
 import { ai2HTMLSettings, ArtboardGroupForOutput, ArtboardInfo } from "./types"
 
@@ -232,6 +234,14 @@ function hasDuplicateArtboardNames(
 	})
 	return false
 }
+function artboardContainsVisibleRasterImage(ab: Artboard, doc: Document) {
+	function test(item: RasterItem | PlacedItem) {
+		// Calling objectHasLayer() prevents a crash caused by opacity masks created from linked rasters.
+		return objectHasLayer(item) && objectOverlapsArtboard(item, ab) && !objectIsHidden(item)
+	}
+	// TODO: verify that placed items are rasters
+	return contains(doc.placedItems, test) || contains(doc.rasterItems, test)
+}
 
 export {
 	findUsableArtboards,
@@ -256,5 +266,6 @@ export {
 	getArtboardVisibilityRange,
 	getArtboardWidthRange,
 	findArtboardIndex,
-	hasDuplicateArtboardNames
+	hasDuplicateArtboardNames,
+	artboardContainsVisibleRasterImage
 }
