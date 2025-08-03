@@ -1,4 +1,4 @@
-//@ts-nocheck because this uses browser apis for which we don't have type checking
+//@ts-nocheck because this uses browser APIs for which we don't have type checking
 
 import { trim } from "../common/stringUtils"
 

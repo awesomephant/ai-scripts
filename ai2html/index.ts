@@ -17,7 +17,6 @@ limitations under the License.*/
 // SR: https://community.adobe.com/havfw69955/attachments/havfw69955/illustrator/426671/1/Illustrator%20JavaScript%20Scripting%20Reference.pdf)
 
 import aiColorToCss from "../common/aiColorToCss"
-import applyTemplate from "../common/applyTemplate"
 import {
 	arraySubtract,
 	contains,
@@ -124,11 +123,13 @@ import {
 import incrementCacheBustToken from "./incrementCacheBustToken"
 import { error } from "./logUtils"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
+import outputLocalPreviewPage from "./nyt_outputLocalPreviewPage"
 import objectIsHidden from "./objectIsHidden"
 import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
+import getSpecialLayerText from "./SpecialLayers/getSpecialLayerText"
 import { getParagraphRanges, getParagraphStyle, textIsRotated, vshiftToPixels } from "./textUtils"
 import type {
 	ai2HTMLSettings,
@@ -284,8 +285,8 @@ function main() {
 			// detect videos and other special layers
 			specialData = convertSpecialLayers(activeArtboard, settings)
 			if (specialData) {
-				forEach(specialData.layers, function (lyr) {
-					lyr.visible = false
+				forEach(specialData.layers, (l) => {
+					l.visible = false
 				})
 			}
 
@@ -358,11 +359,11 @@ function main() {
 		//=====================================
 
 		addTextBlockContent(output, textBlockContent)
-		var htmlFileDestination, htmlFileDestinationFolder
+		let htmlFileDestination
 		const pageName = group.groupName
 		const textForFile = generateOutputHtml(output, group, settings, nameSpace, doc, pageName)
 
-		htmlFileDestinationFolder = docPath + settings.html_output_path
+		const htmlFileDestinationFolder = docPath + settings.html_output_path
 		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path", message, warn)
 		htmlFileDestination = htmlFileDestinationFolder + pageName + settings.html_output_extension
 
@@ -371,9 +372,12 @@ function main() {
 
 		// process local preview template if appropriate
 		if (settings.local_preview_template !== "") {
-			// TODO: may have missed a condition, need to compare with original version
-			var previewFileDestination = htmlFileDestinationFolder + pageName + ".preview.html"
-			outputLocalPreviewPage(textForFile, previewFileDestination, settings)
+			settings.ai2htmlPartial = textForFile
+			outputLocalPreviewPage(
+				`${htmlFileDestinationFolder}${pageName}.preview.html`,
+				settings,
+				docPath
+			)
 		}
 	} // end render()
 
@@ -1596,7 +1600,7 @@ function main() {
 		return style
 	}
 
-	function convertSpecialLayers(activeArtboard, settings) {
+	function convertSpecialLayers(activeArtboard: Artboard, settings: ai2HTMLSettings) {
 		var data = {
 			layers: [],
 			html_before: "",
@@ -1645,17 +1649,6 @@ function main() {
 			url +
 			'" autoplay muted loop playsinline style="top:0; width:100%; object-fit:contain; position:absolute"></video>'
 		)
-	}
-
-	function getSpecialLayerText(lyr: Layer, ab: Artboard) {
-		var text = ""
-		forEach(lyr.textFrames, eachFrame)
-		function eachFrame(frame) {
-			if (boundsIntersect(frame.visibleBounds, ab.artboardRect)) {
-				text = frame.contents
-			}
-		}
-		return text
 	}
 
 	// Generate images and return HTML embed code
@@ -2188,17 +2181,6 @@ function main() {
 	// ai2html output generation functions
 	// ===================================
 
-	// Write an HTML page to a file for NYT Preview
-	function outputLocalPreviewPage(
-		textForFile: string,
-		localPreviewDestination: string,
-		settings: ai2HTMLSettings
-	) {
-		var localPreviewTemplateText = readTextFile(docPath + settings.local_preview_template)
-		settings.ai2htmlPartial = textForFile // TODO: don't modify global settings this way
-		var localPreviewHtml = applyTemplate(localPreviewTemplateText, settings)
-		saveTextFile(localPreviewDestination, localPreviewHtml)
-	}
 	function addTextBlockContent(output: outputData, content) {
 		if (content.css) {
 			output.css += "\r/* Custom CSS */\r" + content.css.join("\r") + "\r"

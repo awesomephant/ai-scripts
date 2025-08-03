@@ -1,7 +1,7 @@
 {
 	"extends": ["html-validate:recommended"],
 	"rules": {
-		"no-inline-style": 0
+		"no-inline-style": 0,
+		"no-autoplay": 0
 	}
 }
-
