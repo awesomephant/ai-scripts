@@ -112,6 +112,7 @@ import getRectangleData from "./getRectangleData"
 import getSymbolClass from "./getSymbolClass"
 import groupArtboardsForOutput from "./groupArtboardForOutput"
 import incrementCacheBustToken from "./incrementCacheBustToken"
+import { error } from "./logUtils"
 import { nyt_generateScoopYaml } from "./nyt_generateScoopYaml"
 import parseDataAttributes from "./parseDataAttributes"
 import parseObjectName from "./parseObjectName"
@@ -122,21 +123,20 @@ import type { ai2HTMLSettings, ArtboardGroupForOutput, exportRasterOptions, Font
 import uniqAssetName from "./uniqAssetName"
 import updateSettingsEntry from "./updateSettingsEntry"
 import validateSettings from "./validateSettings"
+import verifyEntryConditions from "./verifyEntryConditions"
 
 function main() {
+	const startTime = +new Date()
 	const scriptVersion = "0.123.1"
 	const cssPrecision = 4
 
+	let nameSpace: string
 	let fonts: FontRule[] = [...defaultFonts]
 
-	let nameSpace: string
-
-	// vars to hold warnings and informational messages at the end
-	var feedback: string[] = []
-	var warnings: string[] = []
-	var errors: string[] = []
-	var oneTimeWarnings: string[] = []
-	var startTime = +new Date()
+	let feedback: string[] = []
+	let warnings: string[] = []
+	let errors: string[] = []
+	let oneTimeWarnings: string[] = []
 
 	var textFramesToUnhide = []
 	var objectsToRelock = []
@@ -149,40 +149,13 @@ function main() {
 	let docIsSaved: boolean
 	let progressWindow: ProgressWindow
 
-
-	// TODO (max) We might not need this, ES3 is ancient but it does have JSON
 	const JSON = initJSON()
-	// Exit on invalid entry conditions
+
 	try {
 		if (!isTestedIllustratorVersion(app.version)) {
 			warn("Ai2html has not been tested on this version of Illustrator.")
 		}
-		if (!app.documents.length) {
-			error("No documents are open")
-		}
-		if (!String(app.activeDocument.fullName)) {
-			error(
-				"ai2html is unable to run because Illustrator is confused by this document's file path. Does the path contain any forward slashes or other unusual characters?"
-			)
-		}
-		if (!String(app.activeDocument.path)) {
-			error("Please save your Illustrator file before running ai2html")
-		}
-		if (app.activeDocument.documentColorSpace !== DocumentColorSpace.RGB) {
-			error(
-				'Please change the document color mode to "RGB" before running ai2html (File > Document Color Mode > RGB Color).'
-			)
-		}
-		if (app.activeDocument.activeLayer.name == "Isolation Mode") {
-			error("ai2html cannot run because the document is in Isolation Mode.")
-		}
-		if (
-			app.activeDocument.activeLayer.name == "<Opacity Mask>" &&
-			app.activeDocument.layers.length == 1
-		) {
-			// TODO: find a better way to detect this condition (mask can be renamed)
-			error("ai2html cannot run because you are editing an Opacity Mask.")
-		}
+		verifyEntryConditions(app)
 		// initialize script settings
 		doc = app.activeDocument
 		docPath = doc.path + "/"
@@ -204,16 +177,12 @@ function main() {
 
 		validateArtboardNames(docSettings) // warn about duplicate artboard names
 		renderDocument(docSettings, textBlockData.code)
-	} catch (e) {
+	} catch (e: any) {
 		errors.push(formatError(e))
 	}
 
 	restoreDocumentState()
 	if (progressWindow) progressWindow.close()
-
-	// ==========================================
-	// Save the AI document (if needed)
-	// ==========================================
 
 	if (docIsSaved) {
 		doc.saved = true
@@ -419,12 +388,6 @@ function main() {
 
 	function warn(msg: string) {
 		warnings.push(msg)
-	}
-
-	function error(msg: string) {
-		var e = new Error(msg)
-		e.name = "UserError"
-		throw e
 	}
 
 	// id: optional identifier, for cases when the text for this type of warning may vary.
@@ -1988,9 +1951,9 @@ function main() {
 	}
 
 	// Finds layers that have an image type annotation in their names (e.g. :png)
-	//   and passes each tagged layer to a callback, after hiding all other content
+	// and passes each tagged layer to a callback, after hiding all other content
 	// Side effect: Tagged layers remain hidden after the function completes
-	//   (they have to be unhidden later)
+	// (they have to be unhidden later)
 	function forEachImageLayer(imageType, callback: (layer: Layer) => void) {
 		var targetLayers = findTaggedLayers(imageType) // only finds visible layers with a tag
 		var hiddenLayers = []
