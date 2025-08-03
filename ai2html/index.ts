@@ -117,7 +117,9 @@ import {
 	forEachImageLayer,
 	getArtboardImageName,
 	getImageId,
-	getLayerImageName
+	getLayerImageName,
+	getPromoImageFormat,
+	resolveArtboardImageFormat
 } from "./imageUtils"
 import incrementCacheBustToken from "./incrementCacheBustToken"
 import { error } from "./logUtils"
@@ -1594,28 +1596,6 @@ function main() {
 		return style
 	}
 
-	// =================================
-	// ai2html image functions
-	// =================================
-
-	function getPromoImageFormat(ab: Artboard, settings: ai2HTMLSettings) {
-		var fmt = settings.image_format[0]
-		if (fmt == "svg" || !fmt) {
-			fmt = "png"
-		} else {
-			fmt = resolveArtboardImageFormat(fmt, ab)
-		}
-		return fmt
-	}
-
-	// setting: value from ai2html settings (e.g. 'auto' 'png')
-	function resolveArtboardImageFormat(setting: ImageFormat, ab: Artboard) {
-		if (setting === "auto") {
-			return artboardContainsVisibleRasterImage(ab, doc) ? "jpg" : "png"
-		}
-		return setting
-	}
-
 	function convertSpecialLayers(activeArtboard, settings) {
 		var data = {
 			layers: [],
@@ -1873,7 +1853,7 @@ function main() {
 
 		forEach(formats, function (fmt) {
 			var html
-			fmt = resolveArtboardImageFormat(fmt, ab)
+			fmt = resolveArtboardImageFormat(fmt, ab, doc)
 			html = exportImage(imgName, fmt, ab, masks, null, settings)
 			if (!imgHtml) {
 				// use embed code for first of multiple formats
@@ -1888,7 +1868,7 @@ function main() {
 		var abIndex = findLargestArtboardIndex(doc)
 		if (abIndex == -1) return // TODO (max): show error
 		const ab = doc.artboards[abIndex]
-		const format = getPromoImageFormat(ab, settings)
+		const format = getPromoImageFormat(ab, settings, doc)
 		const imgFile = getImageFileName(docSlug + "-promo", format)
 		const outputPath = docPath + imgFile
 		const opts: exportRasterOptions = {

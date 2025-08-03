@@ -1,7 +1,11 @@
 import { find, forEach, indexOf } from "../common/arrayUtils"
 import { findLayers, findTaggedLayers, layerIsChildOf, unhideLayer } from "../common/layerUtils"
-import { getArtboardUniqueName, getLayerName } from "./ArtboardUtils"
-import { ai2HTMLSettings } from "./types"
+import {
+	artboardContainsVisibleRasterImage,
+	getArtboardUniqueName,
+	getLayerName
+} from "./ArtboardUtils"
+import { ai2HTMLSettings, ImageFormat } from "./types"
 
 function getArtboardImageName(ab: Artboard, settings: ai2HTMLSettings, docslug: string) {
 	return getArtboardUniqueName(ab, settings, docslug)
@@ -53,4 +57,28 @@ function forEachImageLayer(imageType: string, doc: Document, callback: (layer: L
 	})
 }
 
-export { getArtboardImageName, getLayerImageName, getImageId, forEachImageLayer }
+// setting: value from ai2html settings (e.g. 'auto' 'png')
+function resolveArtboardImageFormat(setting: ImageFormat, ab: Artboard, doc: Document) {
+	if (setting === "auto") {
+		return artboardContainsVisibleRasterImage(ab, doc) ? "jpg" : "png"
+	}
+	return setting
+}
+
+function getPromoImageFormat(ab: Artboard, settings: ai2HTMLSettings, doc: Document) {
+	var fmt = settings.image_format[0]
+	if (fmt == "svg" || !fmt) {
+		fmt = "png"
+	} else {
+		fmt = resolveArtboardImageFormat(fmt, ab, doc)
+	}
+	return fmt
+}
+export {
+	getArtboardImageName,
+	getLayerImageName,
+	getImageId,
+	forEachImageLayer,
+	resolveArtboardImageFormat,
+	getPromoImageFormat
+}
