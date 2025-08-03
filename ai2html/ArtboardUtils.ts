@@ -1,4 +1,4 @@
-import { forEach, indexOf } from "../common/arrayUtils"
+import { contains, forEach, indexOf } from "../common/arrayUtils"
 import { aiBoundsToRect, boundsIntersect } from "../common/geometryUtils"
 import { makeKeyword } from "../common/stringUtils"
 import cleanObjectName from "./cleanObjectName"
@@ -210,6 +210,29 @@ function findArtboardIndex(ab: Artboard, doc: Document) {
 	return indexOf(doc.artboards, ab)
 }
 
+function hasDuplicateArtboardNames(
+	settings: ai2HTMLSettings,
+	doc: Document,
+	onwarn: (err: string) => void
+): boolean {
+	let seenNames: string[] = []
+
+	forEachUsableArtboard(doc, (ab: Artboard) => {
+		var name = getArtboardName(ab)
+		var isDupe = contains(seenNames, name)
+		if (isDupe) {
+			if (settings.output == "one-file") {
+				onwarn('Artboards should have unique names. "' + name + '" is duplicated.')
+			} else {
+				onwarn('Found a group of artboards named "' + name + '".')
+			}
+			return true
+		}
+		seenNames.push(name)
+	})
+	return false
+}
+
 export {
 	findUsableArtboards,
 	forEachUsableArtboard,
@@ -232,5 +255,6 @@ export {
 	objectOverlapsAnyArtboard,
 	getArtboardVisibilityRange,
 	getArtboardWidthRange,
-	findArtboardIndex
+	findArtboardIndex,
+	hasDuplicateArtboardNames
 }

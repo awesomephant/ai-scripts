@@ -90,6 +90,7 @@ import {
 	getDocumentArtboardName,
 	getLayerName,
 	getRawDocumentName,
+	hasDuplicateArtboardNames,
 	makeDocumentSlug,
 	makeTmpDocument,
 	objectOverlapsAnyArtboard,
@@ -189,7 +190,9 @@ function main() {
 			steps: calcProgressBarSteps(doc)
 		})
 
-		validateArtboardNames(docSettings)
+		if (hasDuplicateArtboardNames(docSettings, doc, warnOnce)) {
+			docSettings.grouped_artboards = true
+		}
 		renderDocument(docSettings, textBlockData.code)
 	} catch (e: any) {
 		errors.push(formatError(e))
@@ -420,25 +423,6 @@ function main() {
 	// ==================================
 	// ai2html program state and settings
 	// ==================================
-
-	function validateArtboardNames(settings: ai2HTMLSettings) {
-		let names: string[] = []
-		forEachUsableArtboard(doc, (ab: Artboard) => {
-			var name = getArtboardName(ab)
-			var isDupe = contains(names, name)
-			if (isDupe) {
-				// kludge: modify settings if same-name artboards are found
-				// (used to prevent duplicate image names)
-				settings.grouped_artboards = true
-				if (settings.output == "one-file") {
-					warnOnce('Artboards should have unique names. "' + name + '" is duplicated.')
-				} else {
-					warnOnce('Found a group of artboards named "' + name + '".')
-				}
-			}
-			names.push(name)
-		})
-	}
 
 	// Import program settings and custom html, css and js
 	// code from specially formatted text blocks
