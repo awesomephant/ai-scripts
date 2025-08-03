@@ -2058,7 +2058,7 @@ function main() {
 	}
 
 	// Create an <img> tag for the artboard image
-	function generateImageHtml(imgFile, imgId, imgClass, imgStyle, ab, settings) {
+	function generateImageHtml(imgFile: string, imgId: string, imgClass: string, imgStyle: string, ab: Artboard, settings: ai2HTMLSettings) {
 		var imgDir = settings.image_source_path,
 			imgAlt = encodeHtmlEntities(settings.image_alt_text || ""),
 			html,
@@ -2322,14 +2322,14 @@ function main() {
 	}
 
 	// Returns true if a file was created or else false (because svg document was empty);
-	function exportSVG(ofile, ab, masks, items, settings) {
+	function exportSVG(ofile: string, ab: Artboard, masks, items, settings: ai2HTMLSettings) {
 		// Illustrator's SVG output contains all objects in a document (it doesn't
 		// clip to the current artboard), so we copy artboard objects to a temporary
 		// document for export.
 		const exportDoc = copyArtboardForImageExport(ab, masks, items)
-		let opts = new ExportOptionsSVG()
 		if (!exportDoc) return false
 
+		let opts = new ExportOptionsSVG()
 		opts.embedAllFonts = false
 		opts.fontSubsetting = SVGFontSubsetting.None
 		opts.compressed = false

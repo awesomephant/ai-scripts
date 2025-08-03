@@ -8,14 +8,9 @@ import {
 
 import { SettingsTextBlockMode } from "./types"
 
-// Clean the contents of custom JS, CSS and HTML blocks
-// (e.g. undo Illustrator's automatic quote conversion, where applicable)
-
 /**
- *
- * @param mode
- * @param raw
- * @returns
+ * Clean the contents of custom JS, CSS and HTML blocks
+ * (e.g. undo Illustrator's automatic quote conversion, where applicable)
  */
 export default function cleanCodeBlock(mode: SettingsTextBlockMode, raw: string) {
 	if (mode.indexOf("html") >= 0) {
