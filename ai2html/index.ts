@@ -187,6 +187,7 @@ function main() {
 		fonts = extendFontlist(fonts, docSettings.fonts || [])
 
 		progressWindow.opts.steps = calcProgressBarSteps(doc)
+
 		progressWindow.show()
 
 		if (!textBlockData.settings && isTrue(docSettings.create_settings_block)) {
