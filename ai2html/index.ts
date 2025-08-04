@@ -50,6 +50,7 @@ import {
 	aiBoundsToRect,
 	boundsAreSimilar,
 	boundsIntersect,
+	CssBoxCoordinates,
 	shiftBounds
 } from "../common/geometryUtils"
 import { getAllArtboardBounds } from "../common/getAllArtboardBounds"
@@ -299,7 +300,7 @@ function main() {
 				textData = { html: "", styles: [] }
 			} else {
 				textFrames = getTextFramesByArtboard(activeArtboard, masks, settings)
-				textData = convertTextFrames(textFrames, activeArtboard, settings)
+				textData = textFramesToHtml(textFrames, activeArtboard, settings)
 			}
 
 			progressWindow.step()
@@ -358,7 +359,15 @@ function main() {
 		addTextBlockContent(output, textBlockContent)
 		let htmlFileDestination
 		const pageName = group.groupName
-		const textForFile = generateOutputHtml(output, group, settings, nameSpace, doc, pageName)
+		const textForFile = generateOutputHtml(
+			output,
+			group,
+			settings,
+			nameSpace,
+			doc,
+			scriptVersion,
+			pageName
+		)
 
 		const htmlFileDestinationFolder = docPath + settings.html_output_path
 		checkForOutputFolder(htmlFileDestinationFolder, "html_output_path", message, warn)
@@ -820,20 +829,25 @@ function main() {
 	}
 
 	// Convert a collection of TextFrames to HTML and CSS
-	function convertTextFrames(textFrames, ab, settings) {
-		var frameData = map(textFrames, function (frame) {
+	function textFramesToHtml(textFrames, ab, settings) {
+		var frameData = map(textFrames, (frame) => {
 			return {
 				paragraphs: importTextFrameParagraphs(frame)
 			}
 		})
 		var pgStyles = []
 		var charStyles = []
+
+		// in the nyt version, deriveTextStyle modifies frameData, we don't
+		// get that effect for some reason (maybe the transpilation?)
 		var baseStyle = deriveTextStyleCss(frameData)
 		var idPrefix = nameSpace + "ai" + findArtboardIndex(ab, doc) + "-"
 		var abBox = aiBoundsToRect(ab.artboardRect)
-		var divs = map(frameData, function (obj, i) {
+
+		var divs = map(frameData, (obj, i) => {
 			var frame = textFrames[i]
 			var divId = frame.name ? makeKeyword(frame.name) : idPrefix + (i + 1)
+			error(JSON.stringify(obj.paragraphs[0]))
 			var positionCss = getTextFrameCss(frame, abBox, obj.paragraphs, settings)
 			return (
 				'\t\t<div id="' +
@@ -882,29 +896,32 @@ function main() {
 		}
 		var currCharStyles
 
-		forEach(frameData, function (frame) {
+		// This modifes frameData
+		forEach(frameData, (frame) => {
 			forEach(frame.paragraphs, analyzeParagraphStyle)
 		})
 
 		// initialize the base <p> style to be equal to the most common pg style
 		if (pgStyles.length > 0) {
-			pgStyles.sort(compareCharCount)
+			pgStyles.sort((a, b) => {
+				return b.count - a.count
+			})
 			extend(baseStyle, pgStyles[0].cssStyle)
 		}
 		// override certain base style properties with default values
 		extend(baseStyle, defaultCssStyle)
+
 		return baseStyle
 
-		function compareCharCount(a, b) {
-			return b.count - a.count
-		}
 		function analyzeParagraphStyle(pdata) {
 			currCharStyles = []
 			forEach(pdata.ranges, convertRangeStyle)
 			if (currCharStyles.length > 0) {
 				// add most common char style to the pg style, to avoid applying
 				// <span> tags to all the text in the paragraph
-				currCharStyles.sort(compareCharCount)
+				currCharStyles.sort((a, b) => {
+					return b.count - a.count
+				})
 				extend(pdata.aiStyle, currCharStyles[0].aiStyle)
 			}
 			pdata.cssStyle = analyzeTextStyle(pdata.aiStyle, pdata.text, pgStyles)
@@ -1221,7 +1238,12 @@ function main() {
 
 	// Create class='' and style='' CSS for positioning the label container div
 	// (This container wraps one or more <p> tags)
-	function getTextFrameCss(thisFrame, abBox, pgData, settings) {
+	function getTextFrameCss(
+		thisFrame: TextFrame,
+		abBox: CssBoxCoordinates,
+		pgData,
+		settings: ai2HTMLSettings
+	) {
 		var styles = ""
 		var classes = ""
 		// Using AI style of first paragraph in TextFrame to get information about
@@ -1232,11 +1254,14 @@ function main() {
 		var lastPgStyle = pgData[pgData.length - 1].aiStyle
 		var isRotated = firstPgStyle.rotated
 		var aiBounds = isRotated ? getUntransformedTextBounds(thisFrame) : thisFrame.geometricBounds
+		error(JSON.stringify(firstPgStyle))
 		var htmlBox = aiBoundsToRect(shiftBounds(aiBounds, -abBox.left, abBox.top))
 		var thisFrameAttributes = parseDataAttributes(thisFrame.note, JSON)
+
 		// estimated space between top of HTML container and character glyphs
 		// (related to differences in AI and CSS vertical positioning of text blocks)
-		var marginTopPx = (firstPgStyle.leading - firstPgStyle.size) / 2 + firstPgStyle.spaceBefore
+		// max: for some reason, .size isn't set here
+		var marginTopPx = (firstPgStyle.leading - firstPgStyle.size || 0) / 2 + firstPgStyle.spaceBefore
 		// estimated space between bottom of HTML container and character glyphs
 		var marginBottomPx = (lastPgStyle.leading - lastPgStyle.size) / 2 + lastPgStyle.spaceAfter
 		// var trackingPx = firstPgStyle.size * firstPgStyle.tracking / 1000;

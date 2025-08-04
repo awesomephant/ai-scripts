@@ -1,7 +1,4 @@
 import roundTo from "./roundTo"
-import { isTrue } from "./booleanUtils"
-import { ai2HTMLSettings } from "../ai2html/types"
-import getSymbolClass from "../ai2html/getSymbolClass"
 
 function formatCssRule(selector: string, obj: Record<string, string | number>): string {
 	var css = selector + " {\r"

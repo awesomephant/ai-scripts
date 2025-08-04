@@ -1,4 +1,4 @@
-import _Artboards from "./Artboards"
+import _Artboards from "./_Artboards"
 import _Artboard from "./_Artboard"
 import _Layers from "./_Layers"
 import _PathItems from "./_PathItems"

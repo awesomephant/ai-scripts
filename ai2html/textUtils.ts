@@ -22,6 +22,10 @@ function getParagraphStyle(p: TextRange) {
 	}
 }
 
+function compareParagraphCharCount(a, b) {
+	return b.count - a.count
+}
+
 // Parse an AI CharacterAttributes object
 function getCharStyle(c: CharacterAttributes) {
 	let o = aiColorToCss(c.fillColor) as any
