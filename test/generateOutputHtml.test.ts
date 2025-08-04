@@ -20,13 +20,13 @@ describe("generateOutputHtml", () => {
 		new _Artboard("Artboard 2", [200, 0, 450, 150]) // 250x150
 	]
 
+	const scriptVersion = "123.45.56"
+
 	const settings = {
 		scriptVersion: "123.45.56",
-		namespace: "should not be included",
 		alt_text: "alt text goes here",
 		credit: "Alice",
 		dark_mode_compatible: true,
-		config_file: ["alt_text", "credit"],
 		output: "one-file"
 	} as ai2HTMLSettings
 
@@ -46,6 +46,7 @@ describe("generateOutputHtml", () => {
 			settings,
 			"ns-",
 			doc as Document,
+			scriptVersion,
 			pageName
 		)
 		expect(html).toMatchSnapshot()
