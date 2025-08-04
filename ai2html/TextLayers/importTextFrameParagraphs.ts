@@ -1,4 +1,7 @@
+import { getBlendMode } from "../../common/pageItemUtils"
 import getComputedOpacity from "../getComputedOpacity"
+import { getParagraphRanges, textIsRotated } from "../textUtils"
+import getParagraphStyle from "./getParagraphStyle"
 
 /**
  * Convert a TextFrame to an array of data records for each of the paragraphs

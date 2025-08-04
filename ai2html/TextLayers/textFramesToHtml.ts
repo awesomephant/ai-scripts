@@ -1,15 +1,17 @@
-import { map } from "../../common/arrayUtils"
+import { extend, forEach, map } from "../../common/arrayUtils"
 import { formatCssRule } from "../../common/cssUtils"
 import { aiBoundsToRect } from "../../common/geometryUtils"
-import { makeKeyword } from "../../common/stringUtils"
+import { makeKeyword, truncateString } from "../../common/stringUtils"
 import { findArtboardIndex } from "../ArtboardUtils"
-import { error } from "../logUtils"
+import { error, warnOnce } from "../logUtils"
 import { ai2HTMLSettings } from "../types"
+import importTextFrameParagraphs from "./importTextFrameParagraphs"
 
 // Convert a collection of TextFrames to HTML and CSS
 export default function textFramesToHtml(
 	textFrames: TextFrame[],
 	ab: Artboard,
+	doc: Document,
 	settings: ai2HTMLSettings,
 	nameSpace: string,
 	JSON: any
@@ -27,7 +29,6 @@ export default function textFramesToHtml(
 	var baseStyle = deriveTextStyleCss(frameData)
 	var idPrefix = nameSpace + "ai" + findArtboardIndex(ab, doc) + "-"
 	var abBox = aiBoundsToRect(ab.artboardRect)
-
 	var divs = map(frameData, (obj, i) => {
 		var frame = textFrames[i]
 		var divId = frame.name ? makeKeyword(frame.name) : idPrefix + (i + 1)

@@ -12,16 +12,6 @@ function textIsRotated(textFrame: TextFrame) {
 	return Math.abs(angle) > 1
 }
 
-// p: an AI paragraph (appears to be a TextRange object with mixed-in ParagraphAttributes)
-function getParagraphStyle(p: TextRange) {
-	return {
-		leading: Math.round(p.leading),
-		spaceBefore: Math.round(p.spaceBefore),
-		spaceAfter: Math.round(p.spaceAfter),
-		justification: String(p.justification) // coerce from object
-	}
-}
-
 // Parse an AI CharacterAttributes object
 function getCharStyle(c: CharacterAttributes) {
 	let o = aiColorToCss(c.fillColor) as any
@@ -68,4 +58,4 @@ function vshiftToPixels(vshift: string, fontSize: number) {
 	return roundTo(px, 1) + "px"
 }
 
-export { textIsRotated, getParagraphStyle, getCharStyle, getParagraphRanges, vshiftToPixels }
+export { textIsRotated, getCharStyle, getParagraphRanges, vshiftToPixels }

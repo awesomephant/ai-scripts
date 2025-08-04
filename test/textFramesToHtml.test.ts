@@ -3,6 +3,7 @@ import textFramesToHtml from "../ai2html/TextLayers/textFramesToHtml"
 import initJSON from "../common/json2"
 import _Artboard from "./__mocks__/_Artboard"
 import { ai2HTMLSettings } from "../ai2html/types"
+import _Document from "./__mocks__/_Document"
 
 it("produces good HTML", () => {
 	const JSON = initJSON()
@@ -17,5 +18,7 @@ it("produces good HTML", () => {
 		output: "one-file"
 	} as ai2HTMLSettings
 
-	const res = textFramesToHtml(textFrames, artboard, settings, namespace, JSON)
+	const doc = new _Document()
+
+	const res = textFramesToHtml(textFrames, artboard, doc, settings, namespace, JSON)
 })

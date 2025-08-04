@@ -11,8 +11,8 @@ type TextRenderingMethod = "html" | "image"
  */
 export interface FontRule {
 	aifont: string
-	family: string
-	weight: string
+	family?: string
+	weight: number
 	style: string
 }
 
