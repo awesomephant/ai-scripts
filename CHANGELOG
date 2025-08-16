@@ -26,3 +26,6 @@
 - extracted `getLineGeometry()`
 - extracted `generateOutputHtml()`
 - extracted `findLayers()`
+- `getTextStyleClass()`
+  - Used to return a class name if found or mutate the classes array in place if not, now it only does the former
+  - Renamed to `getTextStyleClassName()`

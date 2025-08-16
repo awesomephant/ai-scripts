@@ -1,39 +1,152 @@
-import { extend, forEach, map } from "../../common/arrayUtils"
+import { extend, forEach, map, objectDiff } from "../../common/arrayUtils"
 import { formatCssRule } from "../../common/cssUtils"
 import { aiBoundsToRect } from "../../common/geometryUtils"
-import { makeKeyword, truncateString } from "../../common/stringUtils"
+import { cleanHtmlTags } from "../../common/htmlUtils"
+import { cleanHtmlText, makeKeyword, truncateString } from "../../common/stringUtils"
 import { findArtboardIndex } from "../ArtboardUtils"
+import { cssTextStyleProperties } from "../constants"
 import { error, warnOnce } from "../logUtils"
 import { ai2HTMLSettings } from "../types"
+import getTextFrameCss from "./getTextFrameCss"
 import importTextFrameParagraphs from "./importTextFrameParagraphs"
 
-// Convert a collection of TextFrames to HTML and CSS
+interface styleMap {
+	[key: string]: string
+}
+function getStyleKey(s: styleMap, dict: string[]) {
+	let key = ""
+	for (let i = 0; i < dict.length; i++) {
+		key += "~" + (s[dict[i]] || "")
+	}
+	return key
+}
+
+interface cssClass {
+	key: string
+	classname: string
+	style: styleMap
+}
+
+function getTextStyleClassName(
+	style: styleMap,
+	classes: cssClass[],
+	knownStyles: string[]
+): string | null {
+	// TODO classes could be map instead of array and we could just
+	// do O(1) inline lookups instead of calling this method
+	const key = getStyleKey(style, knownStyles)
+	for (let i = 0; i < classes.length; i++) {
+		if (classes[i].key === key) {
+			return classes[i].classname
+		}
+	}
+	return null
+}
+
+/**
+ * Returns cssClass with a new style added
+ */
+function addTextStyleClass(
+	style: styleMap,
+	classes: cssClass[],
+	nameSpace: string,
+	knownStyles: string[],
+	name?: string
+): cssClass[] {
+	const o = {
+		key: getStyleKey(style, knownStyles),
+		style: style,
+		classname: nameSpace + (name || "style") + classes.length
+	}
+	return [...classes, o]
+}
+
+function generateParagraphHtml(pData, baseStyle, pStyles, cStyles) {
+	var html, diff, range, rangeHtml
+	if (pData.text.length === 0) {
+		// empty pg
+		// TODO: Calculate the height of empty paragraphs and generate
+		// CSS to preserve this height (not supported by Illustrator API)
+		return "<p>&nbsp;</p>"
+	}
+
+	diff = objectDiff(pData.cssStyle, baseStyle)
+
+	// Give the pg a class, if it has a different style than the base pg class
+	if (diff) {
+		// name = "pstyle"
+		const className = getTextStyleClassName(diff, pStyles, cssTextStyleProperties)
+		html = `<p class="${getTextStyleClassName(diff, pStyles, cssTextStyleProperties)}">`
+	} else {
+		html = "<p>"
+	}
+
+	for (var j = 0; j < pData.ranges.length; j++) {
+		range = pData.ranges[j]
+		rangeHtml = cleanHtmlText(cleanHtmlTags(range.text, warnOnce))
+		diff = objectDiff(range.cssStyle, pData.cssStyle)
+		if (diff) {
+			rangeHtml =
+				'<span class="' +
+				getTextStyleClassName(diff, cStyles, "cstyle", cssTextStyleProperties) +
+				'">' +
+				rangeHtml +
+				"</span>"
+		}
+		html += rangeHtml
+	}
+	html += "</p>"
+	return html
+}
+
+function generateTextFrameHtml(paragraphs, baseStyle, pStyles, cStyles) {
+	var html = ""
+	for (let i = 0; i < paragraphs.length; i++) {
+		html += "\r\t\t\t" + generateParagraphHtml(paragraphs[i], baseStyle, pStyles, cStyles)
+	}
+	return html
+}
+
+/**
+ * Convert a collection of TextFrames to HTML and CSS
+ */
 export default function textFramesToHtml(
 	textFrames: TextFrame[],
 	ab: Artboard,
 	doc: Document,
 	settings: ai2HTMLSettings,
 	nameSpace: string,
-	JSON: any
+	JSON: any,
+	cssPrecision: number
 ) {
 	const frameData = map(textFrames, (frame) => {
 		return {
 			paragraphs: importTextFrameParagraphs(frame)
 		}
 	})
+
 	let pgStyles = []
 	let charStyles = []
 
-	// in the nyt version, deriveTextStyle modifies frameData, we don't
-	// get that effect for some reason (maybe the transpilation?)
+	// in the NYT version deriveTextStyle modifies frameData, we don't
+	// get that side effect for some reason (maybe the transpilation?)
 	var baseStyle = deriveTextStyleCss(frameData)
-	var idPrefix = nameSpace + "ai" + findArtboardIndex(ab, doc) + "-"
-	var abBox = aiBoundsToRect(ab.artboardRect)
+	const idPrefix = `${nameSpace}ai${findArtboardIndex(ab, doc)}-`
+	const abBox = aiBoundsToRect(ab.artboardRect)
+
 	var divs = map(frameData, (obj, i) => {
 		var frame = textFrames[i]
 		var divId = frame.name ? makeKeyword(frame.name) : idPrefix + (i + 1)
 		error(JSON.stringify(obj.paragraphs[0]))
-		var positionCss = getTextFrameCss(frame, abBox, obj.paragraphs, settings)
+		var positionCss = getTextFrameCss(
+			frame,
+			abBox,
+			obj.paragraphs,
+			settings,
+			cssPrecision,
+			nameSpace,
+			JSON
+		)
 		return (
 			'\t\t<div id="' +
 			divId +
@@ -81,7 +194,7 @@ function deriveTextStyleCss(frameData) {
 	}
 	var currCharStyles
 
-	// This modifes frameData
+	// Max: This modifes frameData :(((
 	forEach(frameData, (frame) => {
 		forEach(frame.paragraphs, analyzeParagraphStyle)
 	})
@@ -158,3 +271,5 @@ function deriveTextStyleCss(frameData) {
 		return cssStyle
 	}
 }
+
+export { getStyleKey, textFramesToHtml, getTextStyleClassName }

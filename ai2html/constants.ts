@@ -1,11 +1,4 @@
-import {
-	ai2HTMLSettings,
-	AiCssMap,
-	AiHtmlMap,
-	blendModeRule,
-	FontRule,
-	IllustratorCssMapping
-} from "./types"
+import { ai2HTMLSettings, AiHtmlMap, FontRule } from "./types"
 
 const defaultFonts: FontRule[] = [
 	{

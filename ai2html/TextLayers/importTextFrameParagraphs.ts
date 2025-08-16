@@ -12,12 +12,13 @@ export default function importTextFrameParagraphs(textFrame: TextFrame) {
 	// The scripting API doesn't give us access to opacity of TextRange objects
 	// (including individual characters). The best we can do is get the
 	// computed opacity of the current TextFrame
-	var opacity = getComputedOpacity(textFrame)
-	var blendMode = getBlendMode(textFrame)
-	var charsLeft = textFrame.characters.length
-	var rotated = textIsRotated(textFrame)
-	var data = []
-	var p, plen, d
+	const opacity = getComputedOpacity(textFrame)
+	const blendMode = getBlendMode(textFrame)
+	const rotated = textIsRotated(textFrame)
+
+	let charsLeft = textFrame.characters.length
+	let data = []
+	let p, plen, d
 	for (var k = 0, n = textFrame.paragraphs.length; k < n && charsLeft > 0; k++) {
 		// trailing newline in a text block adds one to paragraphs.length, but
 		// an error is thrown when such a pg is accessed. charsLeft test is a workaround.
