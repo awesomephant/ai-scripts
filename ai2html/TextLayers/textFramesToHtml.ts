@@ -44,7 +44,7 @@ function getTextStyleClassName(
 }
 
 /**
- * Returns cssClass with a new style added
+ * Returns cssClass with a new style added if not already present
  */
 function addTextStyleClass(
 	style: styleMap,
@@ -53,16 +53,32 @@ function addTextStyleClass(
 	knownStyles: string[],
 	name?: string
 ): cssClass[] {
+	if (getTextStyleClassName(style, classes, knownStyles) !== null) {
+		return classes
+	}
+
 	const o = {
 		key: getStyleKey(style, knownStyles),
 		style: style,
 		classname: nameSpace + (name || "style") + classes.length
-	}
+	} as cssClass
 	return [...classes, o]
 }
 
-function generateParagraphHtml(pData, baseStyle, pStyles, cStyles) {
-	var html, diff, range, rangeHtml
+function generateParagraphHtml(
+	pData,
+	baseStyle,
+	paragraphStyles,
+	characterStyles,
+	knownStyles: string[],
+	namespace: string
+) {
+	// generated CSS classes
+	let kc = []
+
+	// generated HTML
+	let html = ""
+
 	if (pData.text.length === 0) {
 		// empty pg
 		// TODO: Calculate the height of empty paragraphs and generate
@@ -70,28 +86,28 @@ function generateParagraphHtml(pData, baseStyle, pStyles, cStyles) {
 		return "<p>&nbsp;</p>"
 	}
 
-	diff = objectDiff(pData.cssStyle, baseStyle)
-
-	// Give the pg a class, if it has a different style than the base pg class
+	// If the paragraph has a different style than the base paragraph class
+	// give it a class (existing or new)
+	const diff = objectDiff(pData.cssStyle, baseStyle)
 	if (diff) {
-		// name = "pstyle"
-		const className = getTextStyleClassName(diff, pStyles, cssTextStyleProperties)
-		html = `<p class="${getTextStyleClassName(diff, pStyles, cssTextStyleProperties)}">`
+		kc = addTextStyleClass(diff, paragraphStyles, namespace, knownStyles, "pstyle")
+		html = `<p class="${getTextStyleClassName(diff, paragraphStyles, cssTextStyleProperties)}">`
 	} else {
 		html = "<p>"
 	}
 
-	for (var j = 0; j < pData.ranges.length; j++) {
-		range = pData.ranges[j]
-		rangeHtml = cleanHtmlText(cleanHtmlTags(range.text, warnOnce))
-		diff = objectDiff(range.cssStyle, pData.cssStyle)
+	for (let i = 0; i < pData.ranges.length; i++) {
+		const range = pData.ranges[i]
+		const diff = objectDiff(range.cssStyle, pData.cssStyle)
+
+		let rangeHtml = cleanHtmlText(cleanHtmlTags(range.text, warnOnce))
 		if (diff) {
-			rangeHtml =
-				'<span class="' +
-				getTextStyleClassName(diff, cStyles, "cstyle", cssTextStyleProperties) +
-				'">' +
-				rangeHtml +
-				"</span>"
+			kc = addTextStyleClass(diff, characterStyles, namespace, knownStyles, "cstyle")
+			rangeHtml = `<span class="${getTextStyleClassName(
+				diff,
+				characterStyles,
+				cssTextStyleProperties
+			)}">${rangeHtml}</span>`
 		}
 		html += rangeHtml
 	}
@@ -99,10 +115,16 @@ function generateParagraphHtml(pData, baseStyle, pStyles, cStyles) {
 	return html
 }
 
-function generateTextFrameHtml(paragraphs, baseStyle, pStyles, cStyles) {
+function generateTextFrameHtml(
+	paragraphs: Paragraphs,
+	baseStyle,
+	paragraphStyles,
+	characterStyles
+) {
 	var html = ""
 	for (let i = 0; i < paragraphs.length; i++) {
-		html += "\r\t\t\t" + generateParagraphHtml(paragraphs[i], baseStyle, pStyles, cStyles)
+		html +=
+			"\r\t\t\t" + generateParagraphHtml(paragraphs[i], baseStyle, paragraphStyles, characterStyles)
 	}
 	return html
 }

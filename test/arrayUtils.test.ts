@@ -1,5 +1,5 @@
 import { expect, it, describe } from "vitest"
-import { contains, indexOf } from "../common/arrayUtils"
+import { contains, indexOf, objectDiff } from "../common/arrayUtils"
 
 describe("contains()", () => {
 	it("returns false if item not in array", () => {
@@ -27,6 +27,27 @@ describe("contains()", () => {
 	})
 })
 
+describe("objectDiff()", () => {
+	const a = {
+		apples: 2,
+		bananas: 10,
+		alice: "bob"
+	}
+	const b = {
+		apples: 4,
+		bananas: 10,
+		charlie: "david"
+	}
+	it("returns object containing properties of a that are missing or different in bb", () => {
+		expect(objectDiff(a, b)).toStrictEqual({
+			apples: 2,
+			alice: "bob"
+		})
+	})
+	it("returns null if a === b", () => {
+		expect(objectDiff(a, a)).toBe(null)
+	})
+})
 describe("indexOf()", () => {
 	it("returns the correct index", () => {
 		const arr = ["apples", "oranges", "bananas"]

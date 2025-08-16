@@ -66,12 +66,11 @@ function extend(o: any, ...args: any[]) {
 	return o
 }
 
-// Return new object containing properties of a that are missing or different in b
-// Return null if output object would be empty
-// a, b: JS objects
+// Return new object containing properties of a that are missing
+// or different in b, null if output object would be empty
 function objectDiff(a: any, b: any) {
-	var diff: any = null
-	for (var k in a) {
+	let diff: any = null
+	for (let k in a) {
 		if (a[k] != b[k] && a.hasOwnProperty(k)) {
 			diff = diff || {}
 			diff[k] = a[k]
