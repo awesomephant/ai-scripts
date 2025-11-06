@@ -1,30 +1,34 @@
+import { type ai2HTMLSettings } from "../types"
+
+import { cssTextStyleProperties } from "../constants"
+
 import { extend, forEach, map, objectDiff } from "../../common/arrayUtils"
 import { formatCssRule } from "../../common/cssUtils"
 import { aiBoundsToRect } from "../../common/geometryUtils"
 import { cleanHtmlTags } from "../../common/htmlUtils"
 import { cleanHtmlText, makeKeyword, truncateString } from "../../common/stringUtils"
 import { findArtboardIndex } from "../ArtboardUtils"
-import { cssTextStyleProperties } from "../constants"
-import { error, warnOnce } from "../logUtils"
-import { ai2HTMLSettings } from "../types"
+import { error, warn, warnOnce } from "../logUtils"
 import getTextFrameCss from "./getTextFrameCss"
 import importTextFrameParagraphs from "./importTextFrameParagraphs"
+import convertAiTextStyle from "./textStyleToCss"
 
 interface styleMap {
 	[key: string]: string
-}
-function getStyleKey(s: styleMap, dict: string[]) {
-	let key = ""
-	for (let i = 0; i < dict.length; i++) {
-		key += "~" + (s[dict[i]] || "")
-	}
-	return key
 }
 
 interface cssClass {
 	key: string
 	classname: string
 	style: styleMap
+}
+
+function getStyleKey(s: styleMap, dict: string[]) {
+	let key = ""
+	for (let i = 0; i < dict.length; i++) {
+		key += "~" + (s[dict[i]] || "")
+	}
+	return key
 }
 
 function getTextStyleClassName(
@@ -124,7 +128,14 @@ function generateTextFrameHtml(
 	var html = ""
 	for (let i = 0; i < paragraphs.length; i++) {
 		html +=
-			"\r\t\t\t" + generateParagraphHtml(paragraphs[i], baseStyle, paragraphStyles, characterStyles)
+			"\r\t\t\t" +
+			generateParagraphHtml(
+				paragraphs[i],
+				baseStyle,
+				paragraphStyles,
+				characterStyles,
+				cssTextStyleProperties
+			)
 	}
 	return html
 }
@@ -139,7 +150,7 @@ export default function textFramesToHtml(
 	settings: ai2HTMLSettings,
 	nameSpace: string,
 	JSON: any,
-	cssPrecision: number
+	cssPrecision: number = 2
 ) {
 	const frameData = map(textFrames, (frame) => {
 		return {
@@ -150,7 +161,7 @@ export default function textFramesToHtml(
 	let pgStyles = []
 	let charStyles = []
 
-	// in the NYT version deriveTextStyle modifies frameData, we don't
+	// In the NYT version deriveTextStyle modifies frameData, we don't
 	// get that side effect for some reason (maybe the transpilation?)
 	var baseStyle = deriveTextStyleCss(frameData)
 	const idPrefix = `${nameSpace}ai${findArtboardIndex(ab, doc)}-`
@@ -198,6 +209,7 @@ export default function textFramesToHtml(
 // Side effect: adds cssStyle object alongside each aiStyle object
 // frameData: Array of data objects parsed from a collection of TextFrames
 // Returns object containing css text style properties of base pg style
+
 function deriveTextStyleCss(frameData) {
 	var pgStyles = []
 	var baseStyle = {}
@@ -268,24 +280,19 @@ function deriveTextStyleCss(frameData) {
 
 	function analyzeTextStyle(aiStyle, text, stylesArr) {
 		var cssStyle = convertAiTextStyle(aiStyle)
-		var key = getStyleKey(cssStyle)
+		var key = getStyleKey(cssStyle, cssTextStyleProperties)
 		var o
 		if (text.length === 0) {
 			return {}
 		}
 		for (var i = 0; i < stylesArr.length; i++) {
-			if (stylesArr[i].key == key) {
+			if (stylesArr[i].key === key) {
 				o = stylesArr[i]
 				break
 			}
 		}
 		if (!o) {
-			o = {
-				key: key,
-				aiStyle: aiStyle,
-				cssStyle: cssStyle,
-				count: 0
-			}
+			o = { key: key, aiStyle: aiStyle, cssStyle: cssStyle, count: 0 }
 			stylesArr.push(o)
 		}
 		o.count += text.length

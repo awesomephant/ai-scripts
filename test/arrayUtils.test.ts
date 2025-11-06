@@ -48,6 +48,7 @@ describe("objectDiff()", () => {
 		expect(objectDiff(a, a)).toBe(null)
 	})
 })
+
 describe("indexOf()", () => {
 	it("returns the correct index", () => {
 		const arr = ["apples", "oranges", "bananas"]
@@ -55,6 +56,10 @@ describe("indexOf()", () => {
 	})
 	it("returns -1 if no match found", () => {
 		const arr = ["apples", "oranges", "bananas"]
+		expect(indexOf(arr, "fish")).toBe(-1)
+	})
+	it("returns -1 on empty array", () => {
+		const arr: any[] = []
 		expect(indexOf(arr, "fish")).toBe(-1)
 	})
 	it("takes a match function", () => {
