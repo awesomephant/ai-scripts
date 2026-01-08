@@ -1,13 +1,20 @@
 import { getBlendMode } from "../../common/pageItemUtils"
 import getComputedOpacity from "../getComputedOpacity"
 import { getParagraphRanges, textIsRotated } from "../textUtils"
+import { getParagraphStyleResult } from "../types"
 import getParagraphStyle from "./getParagraphStyle"
+
+interface ParagraphRecord {
+	text: string
+	aiStyle: getParagraphStyleResult
+	ranges: any[]
+}
 
 /**
  * Convert a TextFrame to an array of data records for each of the paragraphs
  * contained in the TextFrame.
- * @returns
  */
+
 export default function importTextFrameParagraphs(textFrame: TextFrame) {
 	// The scripting API doesn't give us access to opacity of TextRange objects
 	// (including individual characters). The best we can do is get the
@@ -17,8 +24,9 @@ export default function importTextFrameParagraphs(textFrame: TextFrame) {
 	const rotated = textIsRotated(textFrame)
 
 	let charsLeft = textFrame.characters.length
+	let d: ParagraphRecord
 	let data = []
-	let p, plen, d
+	let p, plen
 
 	for (var k = 0, n = textFrame.paragraphs.length; k < n && charsLeft > 0; k++) {
 		// trailing newline in a text block adds one to paragraphs.length, but
@@ -42,6 +50,7 @@ export default function importTextFrameParagraphs(textFrame: TextFrame) {
 			d.aiStyle.blendMode = blendMode
 			d.aiStyle.frameType = textFrame.kind == TextType.POINTTEXT ? "point" : "area"
 		}
+
 		data.push(d)
 		charsLeft -= plen + 1 // char count + newline
 	}

@@ -188,3 +188,11 @@ export interface exportRasterOptions {
 	png_number_of_colors: number
 	jpg_quality: number
 }
+
+export interface getParagraphStyleResult {
+	leading: number
+	spaceBefore: number
+	spaceAfter: number
+	justification: string
+}
+

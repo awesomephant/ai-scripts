@@ -140,6 +140,10 @@ function generateTextFrameHtml(
 	return html
 }
 
+interface FrameData {
+	paragraphs: any[]
+}
+
 /**
  * Convert a collection of TextFrames to HTML and CSS
  */
@@ -152,7 +156,7 @@ export default function textFramesToHtml(
 	JSON: any,
 	cssPrecision: number = 2
 ) {
-	const frameData = map(textFrames, (frame) => {
+	const frameData: FrameData[] = map(textFrames, (frame) => {
 		return {
 			paragraphs: importTextFrameParagraphs(frame)
 		}
@@ -170,7 +174,10 @@ export default function textFramesToHtml(
 	var divs = map(frameData, (obj, i) => {
 		var frame = textFrames[i]
 		var divId = frame.name ? makeKeyword(frame.name) : idPrefix + (i + 1)
-		error(JSON.stringify(obj.paragraphs[0]))
+
+		// Max: unclear why we're throwing an error here
+		// error(JSON.stringify(obj.paragraphs[0]))
+
 		var positionCss = getTextFrameCss(
 			frame,
 			abBox,

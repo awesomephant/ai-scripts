@@ -52,3 +52,4 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	wariChuLines: number
 	wariChuScale: number
 }
+

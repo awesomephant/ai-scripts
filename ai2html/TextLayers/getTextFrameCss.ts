@@ -130,3 +130,4 @@ export default function getTextFrameCss(
 	}
 	return 'class="' + classes + '" style="' + styles + '"'
 }
+

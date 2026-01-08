@@ -1,10 +1,10 @@
-import _Artboards from "./_Artboards"
+import Artboards from "./Artboards"
 import _Artboard from "./_Artboard"
 import _Layers from "./_Layers"
 import _PathItems from "./_PathItems"
 
 export default class _Document implements Partial<Document> {
-	artboards: _Artboard[]
+	artboards: Artboards
 	XMPString: string
 	activeDataSet: DataSet
 	activeLayer: Layer
@@ -15,6 +15,20 @@ export default class _Document implements Partial<Document> {
 	compoundPathItems: CompoundPathItems
 	cropBox: Rect
 	cropStyle: CropOptions
+	exportPDFPreset(file: File): void {}
+	exportPerspectiveGridPreset(file: File): void {}
+	exportPrintPreset(file: File): void {}
+	exportSelectionAsAi(exportFile: File): void {}
+	exportSelectionAsPNG(exportFile: File, options?: any): void {}
+	exportVariables(file: File): void {}
+	fitArtboardToSelectedArt(index?: number): boolean {}
+	getPerspectiveActivePlane(): PerspectiveGridPlaneType {}
+	hidePerspectiveGrid(): boolean {}
+	importPerspectiveGridPreset(fileSpec: File, perspectivePreset?: string): void {}
+	importPrintPreset(printPreset: string, fileSpec: File): void {}
+	importVariables(fileSpec: File): void {}
+	selectPerspectivePreset(perspectivePreset: string): boolean {}
+	setPerspectiveActivePlane(perspectiveGridPlane: PerspectiveGridPlaneType): boolean {}
 	dataSets: DataSets
 	defaultFillColor: Color
 	defaultFillOverprint: boolean
@@ -159,3 +173,4 @@ export default class _Document implements Partial<Document> {
 		// noop
 	}
 }
+

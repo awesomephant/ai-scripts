@@ -5,11 +5,16 @@ import textFramesToHtml, {
 	getStyleKey,
 	getTextStyleClassName
 } from "../ai2html/TextLayers/textFramesToHtml"
+import { type ai2HTMLSettings } from "../ai2html/types"
+
 import initJSON from "../common/json2"
-import _Artboard from "./__mocks__/_Artboard"
-import { ai2HTMLSettings } from "../ai2html/types"
-import _Document from "./__mocks__/_Document"
-import _TextFrameItem from "./__mocks__/_TextFrameItem"
+import Artboard from "./__mocks__/_Artboard"
+import Document from "./__mocks__/_Document"
+import TextFrame from "./__mocks__/TextFrame"
+import TextFrameItems from "./__mocks__/_TextFrameItems"
+import Paragraphs from "./__mocks__/Paragraphs"
+import TextRange from "./__mocks__/_TextRange"
+import { mockCharacters } from "./__mocks__/helpers"
 
 const knownStyles = ["position", "font-family", "font-size", "font-weight", "font-style", "color"]
 
@@ -44,8 +49,7 @@ describe("getTextStyleClassName()", () => {
 describe("textFramesToHtml()", () => {
 	it("produces valid HTML", () => {
 		const JSON = initJSON()
-		const textFrames: TextFrame[] = []
-		const artboard = new _Artboard("Artboard 1", [0, 0, 800, 600])
+		const artboard = new Artboard("Artboard 1", [0, 0, 800, 600])
 		const namespace = "ns-"
 
 		const settings: ai2HTMLSettings = {
@@ -56,10 +60,18 @@ describe("textFramesToHtml()", () => {
 			output: "one-file"
 		}
 
-		const doc = new _Document()
-		doc.textFrames = [new _TextFrameItem()]
+		const doc = new Document()
 
-		const res = textFramesToHtml(textFrames, artboard, doc, settings, namespace, JSON)
+		const tf = new TextFrame()
+		tf.paragraphs = []
+		tf.characters = mockCharacters("test")
+		tf.paragraphs[0] = new TextRange("test")
+		doc.textFrames = [tf]
+
+		console.log(doc.textFrames[0])
+
+		const res = textFramesToHtml(doc.textFrames, artboard, doc, settings, namespace, JSON)
+
 		expect(res).toMatchInlineSnapshot(`
 			{
 			  "html": "",

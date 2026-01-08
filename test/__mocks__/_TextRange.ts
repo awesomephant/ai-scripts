@@ -1,4 +1,5 @@
-import _CharacterAttributes from "./_CharacterAttributes"
+import CharacterAttributes from "./_CharacterAttributes"
+import { mockCharacters } from "./helpers"
 
 export default class _TextRange implements TextRange {
 	characterAttributes: CharacterAttributes
@@ -19,6 +20,7 @@ export default class _TextRange implements TextRange {
 	textSelection: TextRange[]
 	typename: string
 	words: Words
+
 	changeCaseTo(type: CaseChangeType): void {
 		throw new Error("Method not implemented.")
 	}
@@ -40,8 +42,9 @@ export default class _TextRange implements TextRange {
 	select(addToDocument?: boolean): void {
 		throw new Error("Method not implemented.")
 	}
-	constructor() {
-		this.characterAttributes = new _CharacterAttributes()
+	constructor(contents: string) {
+		this.contents = contents
+		this.characters = mockCharacters(contents)
 	}
 }
 

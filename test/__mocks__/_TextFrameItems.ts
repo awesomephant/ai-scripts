@@ -1,22 +1,8 @@
-import _TextFrameItem from "./_TextFrameItem"
+import TextFrame from "./TextFrame"
 
-export default class _TextFrameItems implements TextFrameItems {
-	[n: number]: TextFrame
-	length: number
-	parent: object
-	typename: string
-	add(): TextFrame {
-		throw new Error("Method not implemented.")
-	}
-	areaText(): _TextFrameItem {
-		return new _TextFrameItem()
-	}
-	getByName(name: string): TextFrame {
-		throw new Error("Method not implemented.")
-	}
-	removeAll(): void {
-		throw new Error("Method not implemented.")
-	}
+export default class _TextFrameItems implements Array<TextFrame> {
+	length: number = 0
+
 	concat(...values: TextFrame[][]): TextFrame[] {
 		throw new Error("Method not implemented.")
 	}
@@ -27,7 +13,8 @@ export default class _TextFrameItems implements TextFrameItems {
 		throw new Error("Method not implemented.")
 	}
 	push(...values: TextFrame[]): number {
-		throw new Error("Method not implemented.")
+		this.push(...values)
+		return this.length
 	}
 	reverse(): TextFrame[] {
 		throw new Error("Method not implemented.")
@@ -56,4 +43,6 @@ export default class _TextFrameItems implements TextFrameItems {
 	unshift(...values: TextFrame[]): number {
 		throw new Error("Method not implemented.")
 	}
+	[n: number]: TextFrame
 }
+

@@ -11,22 +11,23 @@ Object.entries(globals).forEach(([key, val]) => {
 
 it("calls onsuccess", () => {
 	const onsuccess = vi.fn()
-	const doc = new _Document()
+	const doc: Document = new _Document()
 	doc.name = "test.ai"
 	doc.artboards = [
 		new _Artboard("Artboard 1", [0, 0, -100, 100]), // 100x100
 		new _Artboard("Artboard 2", [200, 0, -450, 150]) // 250x150
 	]
 
-	const settings = {
+	const settings: ai2HTMLSettings = {
 		scriptVersion: "123.45.56",
 		namespace: "should not be included",
 		alt_text: "alt text goes here",
 		credit: "Alice",
 		dark_mode_compatible: true,
 		output: "one-file"
-	} as ai2HTMLSettings
+	}
 
-	createSettingsBlock(settings, doc as Document, onsuccess)
+	createSettingsBlock(settings, doc, onsuccess)
 	expect(onsuccess).toHaveBeenCalled()
 })
+
