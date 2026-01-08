@@ -132,7 +132,8 @@ import parseObjectName from "./parseObjectName"
 import { parseSettingsEntries } from "./parseSettingsEntries"
 import { getOutputImagePixelRatio } from "./RasterUtils"
 import getSpecialLayerText from "./SpecialLayers/getSpecialLayerText"
-import { getParagraphRanges, getParagraphStyle, textIsRotated, vshiftToPixels } from "./textUtils"
+import getParagraphStyle from "./TextLayers/getParagraphStyle"
+import { getParagraphRanges, textIsRotated, vshiftToPixels } from "./textUtils"
 import type {
 	ai2HTMLSettings,
 	ArtboardGroupForOutput,
@@ -2185,3 +2186,4 @@ function main() {
 }
 
 main()
+

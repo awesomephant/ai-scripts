@@ -44,3 +44,4 @@ export default class _TextRange implements TextRange {
 		this.characterAttributes = new _CharacterAttributes()
 	}
 }
+

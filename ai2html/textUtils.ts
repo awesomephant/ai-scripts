@@ -59,3 +59,4 @@ function vshiftToPixels(vshift: string, fontSize: number) {
 }
 
 export { textIsRotated, getCharStyle, getParagraphRanges, vshiftToPixels }
+

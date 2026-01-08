@@ -19,6 +19,7 @@ export default function importTextFrameParagraphs(textFrame: TextFrame) {
 	let charsLeft = textFrame.characters.length
 	let data = []
 	let p, plen, d
+
 	for (var k = 0, n = textFrame.paragraphs.length; k < n && charsLeft > 0; k++) {
 		// trailing newline in a text block adds one to paragraphs.length, but
 		// an error is thrown when such a pg is accessed. charsLeft test is a workaround.
@@ -44,5 +45,7 @@ export default function importTextFrameParagraphs(textFrame: TextFrame) {
 		data.push(d)
 		charsLeft -= plen + 1 // char count + newline
 	}
+
 	return data
 }
+

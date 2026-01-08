@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+import "html-validate/vitest"
+
 import textFramesToHtml, {
 	getStyleKey,
 	getTextStyleClassName
@@ -7,6 +9,7 @@ import initJSON from "../common/json2"
 import _Artboard from "./__mocks__/_Artboard"
 import { ai2HTMLSettings } from "../ai2html/types"
 import _Document from "./__mocks__/_Document"
+import _TextFrameItem from "./__mocks__/_TextFrameItem"
 
 const knownStyles = ["position", "font-family", "font-size", "font-weight", "font-style", "color"]
 
@@ -39,21 +42,30 @@ describe("getTextStyleClassName()", () => {
 })
 
 describe("textFramesToHtml()", () => {
-	it("produces good HTML", () => {
+	it("produces valid HTML", () => {
 		const JSON = initJSON()
 		const textFrames: TextFrame[] = []
 		const artboard = new _Artboard("Artboard 1", [0, 0, 800, 600])
 		const namespace = "ns-"
-		const settings = {
+
+		const settings: ai2HTMLSettings = {
 			scriptVersion: "123.45.56",
 			alt_text: "alt text goes here",
 			credit: "Alice",
 			dark_mode_compatible: true,
 			output: "one-file"
-		} as ai2HTMLSettings
+		}
 
 		const doc = new _Document()
+		doc.textFrames = [new _TextFrameItem()]
 
 		const res = textFramesToHtml(textFrames, artboard, doc, settings, namespace, JSON)
+		expect(res).toMatchInlineSnapshot(`
+			{
+			  "html": "",
+			  "styles": [],
+			}
+		`)
 	})
 })
+
