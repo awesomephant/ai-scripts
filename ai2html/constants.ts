@@ -166,3 +166,4 @@ const defaultSettings: Partial<ai2HTMLSettings> = {
 	config_file: ["headline", "leadin", "summary", "notes", "sources", "credit"]
 }
 export { defaultFonts, caps, align, blendModes, defaultSettings, cssTextStyleProperties }
+

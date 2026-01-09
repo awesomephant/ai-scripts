@@ -37,7 +37,7 @@ function getParagraphRanges(p: TextRange) {
 
 		// Max: p.characters is of type Characters, but getCharStyle
 		// expects a CharacterAttributes. Somehow this works with the
-		// app, but understandably not in our tests. Adding a ternary
+		// real app, but understandably not in our tests. Adding a ternary
 		// for now but it is confusing
 
 		curr = getCharStyle(typeof c == "CharacterAttributes" ? c : c.characterAttributes)
@@ -67,3 +67,4 @@ function vshiftToPixels(vshift: string, fontSize: number): string {
 }
 
 export { textIsRotated, getCharStyle, getParagraphRanges, vshiftToPixels }
+

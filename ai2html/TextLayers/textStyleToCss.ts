@@ -1,6 +1,7 @@
 import { getMapValue } from "../../common/arrayUtils"
 import roundTo from "../../common/roundTo"
 import { vshiftToPixels } from "../textUtils"
+import findFontInfo from "./findFontInfo"
 
 /**
  * convert an object containing parsed AI text styles
@@ -81,3 +82,4 @@ export default function convertAiTextStyle(aiStyle, cssPrecision: number, blendM
 	}
 	return cssStyle
 }
+

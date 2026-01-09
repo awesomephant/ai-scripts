@@ -1,4 +1,6 @@
 import RGBColor from "./_RGBColor.ts"
+import TextFont from "./TextFont"
+
 export default class _CharacterAttributes implements CharacterAttributes {
 	Tsume: number
 	akiLeft: number
@@ -14,7 +16,7 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	contextualLigature: boolean
 	discretionaryLigature: boolean
 	figureStyle: FigureStyleType
-	fillColor: Color = new RGBColor(0,0,0)
+	fillColor: Color = new RGBColor(0, 0, 0)
 	fractions: boolean
 	horizontalScale: number
 	italics: boolean
@@ -39,7 +41,7 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	swash: boolean
 	tateChuYokoHorizontal: number
 	tateChuYokoVertical: number
-	textFont: TextFont
+	textFont: TextFont = new TextFont()
 	titling: boolean
 	tracking: number
 	typename: string
@@ -53,3 +55,4 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	wariChuLines: number
 	wariChuScale: number
 }
+

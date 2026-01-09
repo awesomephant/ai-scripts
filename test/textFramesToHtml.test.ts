@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import "html-validate/vitest"
 
 import textFramesToHtml, {
@@ -11,10 +11,14 @@ import initJSON from "../common/json2"
 import Artboard from "./__mocks__/_Artboard"
 import Document from "./__mocks__/_Document"
 import TextFrame from "./__mocks__/TextFrame"
-import TextFrameItems from "./__mocks__/_TextFrameItems"
-import Paragraphs from "./__mocks__/Paragraphs"
 import TextRange from "./__mocks__/_TextRange"
 import { mockCharacters } from "./__mocks__/helpers"
+
+import globals from "./__mocks__/globals"
+
+Object.entries(globals).forEach(([key, val]) => {
+	vi.stubGlobal(key, val)
+})
 
 const knownStyles = ["position", "font-family", "font-size", "font-weight", "font-style", "color"]
 
@@ -48,6 +52,8 @@ describe("getTextStyleClassName()", () => {
 
 describe("textFramesToHtml()", () => {
 	it("produces valid HTML", () => {
+		console.log(ZOrderMethod)
+		console.log(FontBaselineOption)
 		const JSON = initJSON()
 		const artboard = new Artboard("Artboard 1", [0, 0, 800, 600])
 		const namespace = "ns-"
@@ -81,3 +87,4 @@ describe("textFramesToHtml()", () => {
 		`)
 	})
 })
+
