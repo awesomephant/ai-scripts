@@ -2,7 +2,7 @@ import aiColorToCss from "../common/aiColorToCss"
 import { objectDiff } from "../common/arrayUtils"
 import roundTo from "../common/roundTo"
 
-function textIsRotated(textFrame: TextFrame) {
+function textIsRotated(textFrame: TextFrame): boolean {
 	var m = textFrame.matrix
 	var angle
 	if (m.mValueA == 1 && m.mValueB === 0 && m.mValueC === 0 && m.mValueD == 1) return false
@@ -25,15 +25,22 @@ function getCharStyle(c: CharacterAttributes) {
 	return o
 }
 
-// Divide a paragraph (TextRange object) into an array of
-// data objects describing text strings having the same style.
+/* Divide a paragraph (TextRange object) into an array of
+ * data objects describing text strings having the same style.
+ */
 function getParagraphRanges(p: TextRange) {
-	var segments = []
-	var currRange
-	var prev, curr, c
+	let segments = []
+	let currRange
+	let prev, curr, c
 	for (var i = 0, n = p.characters.length; i < n; i++) {
 		c = p.characters[i]
-		curr = getCharStyle(c)
+
+		// Max: p.characters is of type Characters, but getCharStyle
+		// expects a CharacterAttributes. Somehow this works with the
+		// app, but understandably not in our tests. Adding a ternary
+		// for now but it is confusing
+
+		curr = getCharStyle(typeof c == "CharacterAttributes" ? c : c.characterAttributes)
 		if (!prev || objectDiff(curr, prev)) {
 			currRange = {
 				text: "",
@@ -50,13 +57,13 @@ function getParagraphRanges(p: TextRange) {
 	return segments
 }
 
-function vshiftToPixels(vshift: string, fontSize: number) {
-	var i = vshift.indexOf("%")
-	var pct = parseFloat(vshift)
-	var px = (fontSize * pct) / 100
+function vshiftToPixels(vshift: string, fontSize: number): string {
+	const i = vshift.indexOf("%")
+	const pct = parseFloat(vshift)
+	const px = (fontSize * pct) / 100
+
 	if (!px || i == -1) return "0"
 	return roundTo(px, 1) + "px"
 }
 
 export { textIsRotated, getCharStyle, getParagraphRanges, vshiftToPixels }
-

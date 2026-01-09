@@ -5,9 +5,14 @@ export default class _Layers implements Layers {
 	length: number
 	parent: object
 	typename: string
+	#length: number = 0
 
 	add(): Layer {
-		throw new Error("Method not implemented.")
+		const l =  new Layer()
+		this[this.#length] = l
+		this.#length += 1
+
+		return l
 	}
 	getByName(name: string): Layer {
 		throw new Error("Method not implemented.")
@@ -55,4 +60,3 @@ export default class _Layers implements Layers {
 		throw new Error("Method not implemented.")
 	}
 }
-

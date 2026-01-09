@@ -2,7 +2,7 @@ import CharacterAttributes from "./_CharacterAttributes"
 import { mockCharacters } from "./helpers"
 
 export default class _TextRange implements TextRange {
-	characterAttributes: CharacterAttributes
+	characterAttributes: CharacterAttributes = new CharacterAttributes()
 	characterOffset: number
 	characterStyles: CharacterStyles
 	characters: Characters
@@ -47,4 +47,3 @@ export default class _TextRange implements TextRange {
 		this.characters = mockCharacters(contents)
 	}
 }
-

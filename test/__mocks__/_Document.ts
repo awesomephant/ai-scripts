@@ -1,6 +1,6 @@
 import Artboards from "./Artboards"
 import _Artboard from "./_Artboard"
-import _Layers from "./_Layers"
+import _Layers from "./Layers"
 import _PathItems from "./_PathItems"
 
 export default class _Document implements Partial<Document> {
@@ -173,4 +173,3 @@ export default class _Document implements Partial<Document> {
 		// noop
 	}
 }
-

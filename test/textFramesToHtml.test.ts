@@ -66,9 +66,10 @@ describe("textFramesToHtml()", () => {
 		tf.paragraphs = []
 		tf.characters = mockCharacters("test")
 		tf.paragraphs[0] = new TextRange("test")
+
 		doc.textFrames = [tf]
 
-		console.log(doc.textFrames[0])
+		console.log(doc.textFrames[0].paragraphs[0])
 
 		const res = textFramesToHtml(doc.textFrames, artboard, doc, settings, namespace, JSON)
 
@@ -80,4 +81,3 @@ describe("textFramesToHtml()", () => {
 		`)
 	})
 })
-

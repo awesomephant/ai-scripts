@@ -2,7 +2,7 @@ import { it, expect, vi } from "vitest"
 import createSettingsBlock from "../ai2html/createSettingsBlock"
 import _Document from "./__mocks__/_Document"
 import { ai2HTMLSettings } from "../ai2html/types"
-import _Artboard from "./__mocks__/_Artboard"
+import Artboard from "./__mocks__/_Artboard"
 import globals from "./__mocks__/globals"
 
 Object.entries(globals).forEach(([key, val]) => {
@@ -14,8 +14,8 @@ it("calls onsuccess", () => {
 	const doc: Document = new _Document()
 	doc.name = "test.ai"
 	doc.artboards = [
-		new _Artboard("Artboard 1", [0, 0, -100, 100]), // 100x100
-		new _Artboard("Artboard 2", [200, 0, -450, 150]) // 250x150
+		new Artboard("Artboard 1", [0, 0, -100, 100]), // 100x100
+		new Artboard("Artboard 2", [200, 0, -450, 150]) // 250x150
 	]
 
 	const settings: ai2HTMLSettings = {
@@ -30,4 +30,3 @@ it("calls onsuccess", () => {
 	createSettingsBlock(settings, doc, onsuccess)
 	expect(onsuccess).toHaveBeenCalled()
 })
-

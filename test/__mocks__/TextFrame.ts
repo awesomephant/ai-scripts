@@ -1,4 +1,3 @@
-import _CharacterAttributes from "./_CharacterAttributes"
 import TextRange from "./_TextRange"
 import _Matrix from "./Matrix"
 
@@ -160,4 +159,3 @@ export default class _TextFrame implements TextFrame {
 		throw new Error("Method not implemented.")
 	}
 }
-

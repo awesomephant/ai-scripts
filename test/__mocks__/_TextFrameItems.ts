@@ -1,6 +1,6 @@
 import TextFrame from "./TextFrame"
 
-export default class _TextFrameItems implements Array<TextFrame> {
+export default class _TextFrameItems implements TextFrameItems {
 	length: number = 0
 
 	concat(...values: TextFrame[][]): TextFrame[] {
@@ -43,6 +43,8 @@ export default class _TextFrameItems implements Array<TextFrame> {
 	unshift(...values: TextFrame[]): number {
 		throw new Error("Method not implemented.")
 	}
+	areaText(textPath: PathItem, orientation?: TextOrientation, baseFrame?: TextFrame, postFix?: boolean): TextFrame{
+		return new TextFrame()
+	}
 	[n: number]: TextFrame
 }
-

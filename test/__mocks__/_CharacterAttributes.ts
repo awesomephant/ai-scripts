@@ -1,3 +1,4 @@
+import RGBColor from "./_RGBColor.ts"
 export default class _CharacterAttributes implements CharacterAttributes {
 	Tsume: number
 	akiLeft: number
@@ -13,7 +14,7 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	contextualLigature: boolean
 	discretionaryLigature: boolean
 	figureStyle: FigureStyleType
-	fillColor: Color
+	fillColor: Color = new RGBColor(0,0,0)
 	fractions: boolean
 	horizontalScale: number
 	italics: boolean
@@ -52,4 +53,3 @@ export default class _CharacterAttributes implements CharacterAttributes {
 	wariChuLines: number
 	wariChuScale: number
 }
-
