@@ -9,12 +9,12 @@
 	"main": "index.js",
 	"devDependencies": {
 		"@rollup/plugin-typescript": "^12.3.0",
-		"@vitest/coverage-v8": "4.0.16",
-		"html-validate": "^10.5.0",
+		"@vitest/coverage-v8": "4.0.18",
+		"html-validate": "^10.7.0",
 		"tslib": "^2.8.1",
 		"types-for-adobe": "^7.2.5",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.16"
+		"vitest": "^4.0.18"
 	},
 	"packageManager": "yarn@4.12.0"
 }
